@@ -5677,6 +5677,32 @@ NSC_GenerateKeyPair(CK_SESSION_HANDLE hSession,
             PORT_FreeArena(ecPriv->ecParams.arena, PR_TRUE);
             break;
 
+        case CKM_NSS_CECPQ3_KEY_GEN:
+            key_type = CKK_NSS_CECPQ3;
+
+            SECItem *pub = NULL;
+            SECItem *priv = NULL;
+
+            rv = CECPQ3_Generate(&pub, &priv);
+            if (rv != SECSuccess) {
+                crv = sftk_MapCryptError(PORT_GetError());
+                break;
+            }
+
+            crv = sftk_AddAttributeType(publicKey, CKA_VALUE,
+                                        sftk_item_expand(pub));
+            if (crv != CKR_OK) {
+                break;
+            }
+
+            crv = sftk_AddAttributeType(privateKey, CKA_VALUE,
+                                        sftk_item_expand(priv));
+            if (crv != CKR_OK) {
+                break;
+            }
+
+            break;
+
         default:
             crv = CKR_MECHANISM_INVALID;
     }
@@ -5760,7 +5786,7 @@ NSC_GenerateKeyPair(CK_SESSION_HANDLE hSession,
                                   &cktrue, sizeof(CK_BBOOL));
     }
 
-    if (crv == CKR_OK) {
+    if (crv == CKR_OK && key_type != CKK_NSS_CECPQ3) {
         /* Perform FIPS 140-2 pairwise consistency check. */
         crv = sftk_PairwiseConsistencyCheck(hSession, slot,
                                             publicKey, privateKey, key_type);

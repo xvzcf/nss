@@ -44,6 +44,11 @@ pk11_MakeIDFromPublicKey(SECKEYPublicKey *pubKey)
         case ecKey:
             pubKeyIndex = &pubKey->u.ec.publicValue;
             break;
+        case cecpq3Key:
+            unsigned char buf[1] = {0};
+            pubKeyIndex = SECITEM_AllocItem(NULL, pubKeyIndex, 1);
+            pubKeyIndex->data = buf;
+            break;
         default:
             return NULL;
     }
@@ -619,6 +624,9 @@ PK11_ExtractPublicKey(PK11SlotInfo *slot, KeyType keyType, CK_OBJECT_HANDLE id)
             case CKK_EC:
                 keyType = ecKey;
                 break;
+            case CKK_NSS_CECPQ3:
+                keyType = cecpq3Key;
+                break;
             default:
                 PORT_SetError(SEC_ERROR_BAD_KEY);
                 return NULL;
@@ -773,6 +781,9 @@ PK11_ExtractPublicKey(PK11SlotInfo *slot, KeyType keyType, CK_OBJECT_HANDLE id)
                                            &pubKey->u.ec.DEREncodedParams, value,
                                            &pubKey->u.ec.publicValue);
             break;
+        case cecpq3Key:
+            crv = CKR_OK;
+            break;
         case fortezzaKey:
         case nullKey:
         default:
@@ -825,6 +836,9 @@ PK11_MakePrivKey(PK11SlotInfo *slot, KeyType keyType,
                 break;
             case CKK_EC:
                 keyType = ecKey;
+                break;
+            case CKK_NSS_CECPQ3:
+                keyType = cecpq3Key;
                 break;
             default:
                 break;
@@ -1208,6 +1222,15 @@ PK11_GenerateKeyPairWithOpFlags(PK11SlotInfo *slot, CK_MECHANISM_TYPE type,
         { CKA_MODIFIABLE, NULL, 0 },
     };
     SECKEYECParams *ecParams;
+    CK_ATTRIBUTE cecpq3PubTemplate[] = {
+        { CKA_TOKEN, NULL, 0 },
+        { CKA_DERIVE, NULL, 0 },
+        { CKA_WRAP, NULL, 0 },
+        { CKA_VERIFY, NULL, 0 },
+        { CKA_VERIFY_RECOVER, NULL, 0 },
+        { CKA_ENCRYPT, NULL, 0 },
+        { CKA_MODIFIABLE, NULL, 0 },
+    };
 
     /*CK_ULONG key_size = 0;*/
     CK_ATTRIBUTE *pubTemplate;
@@ -1244,7 +1267,7 @@ PK11_GenerateKeyPairWithOpFlags(PK11SlotInfo *slot, CK_MECHANISM_TYPE type,
         return NULL;
     }
 
-    if (!param) {
+    if (!param && type != CKM_NSS_CECPQ3_KEY_GEN) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
         return NULL;
     }
@@ -1412,6 +1435,12 @@ PK11_GenerateKeyPairWithOpFlags(PK11SlotInfo *slot, CK_MECHANISM_TYPE type,
                 test_mech.mechanism = CKM_ECDH1_DERIVE;
                 test_mech2.mechanism = CKM_ECDSA;
             }
+            break;
+        case CKM_NSS_CECPQ3_KEY_GEN:
+            test_mech.mechanism = CKM_NSS_CECPQ3_KEY_GEN;
+            attrs = cecpq3PubTemplate;
+            pubTemplate = cecpq3PubTemplate;
+            keyType = cecpq3Key;
             break;
         default:
             PORT_SetError(SEC_ERROR_BAD_KEY);

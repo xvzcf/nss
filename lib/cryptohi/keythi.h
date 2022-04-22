@@ -33,7 +33,8 @@ typedef enum {
     keaKey = 5, /* deprecated */
     ecKey = 6,
     rsaPssKey = 7,
-    rsaOaepKey = 8
+    rsaOaepKey = 8,
+    cecpq3Key = 9
 } KeyType;
 
 /*
