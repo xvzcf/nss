@@ -760,6 +760,7 @@
     'include_dirs': [
       'mpi',
       'ecl',
+      'kyber512',
       'verified',
       'verified/kremlin/include',
       'verified/kremlin/kremlib/dist/minimal',

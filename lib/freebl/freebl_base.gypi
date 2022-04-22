@@ -61,6 +61,18 @@
     'sysrand.c',
     'tlsprfalg.c',
     'secmpi.c',
+    'kyber512/cbd.c',
+    'kyber512/indcpa.c',
+    'kyber512/kem.c',
+    'kyber512/ntt.c',
+    'kyber512/poly.c',
+    'kyber512/polyvec.c',
+    'kyber512/reduce.c',
+    'kyber512/symmetric-shake.c',
+    'kyber512/verify.c',
+    'kyber512/fips202.c',
+    'kyber512/randombytes.c',
+    'cecpq3.c',
   ],
   'conditions': [
     [ 'OS=="linux" or OS=="android"', {
