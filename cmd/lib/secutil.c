@@ -4186,6 +4186,9 @@ groupNameToNamedGroup(char *name)
         }
     }
     if (PL_strlen(name) == 6) {
+        if (!strncmp(name, "CECPQ3", 6)) {
+            return ssl_grp_cecpq3;
+        }
         if (!strncmp(name, "x25519", 6)) {
             return ssl_grp_ec_curve25519;
         }

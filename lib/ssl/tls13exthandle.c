@@ -83,6 +83,8 @@ tls13_SizeOfKeyShareEntry(const SECKEYPublicKey *pubKey)
             return 2 + 2 + pubKey->u.ec.publicValue.len;
         case dhKey:
             return 2 + 2 + pubKey->u.dh.prime.len;
+        case cecpq3Key:
+            return 2 + 2 + 32 + CECPQ3_PUBLICKEYBYTES;
         default:
             PORT_Assert(0);
     }
@@ -111,6 +113,17 @@ tls13_EncodeKeyShareEntry(sslBuffer *buf, SSLNamedGroup group,
         case dhKey:
             rv = ssl_AppendPaddedDHKeyShare(buf, pubKey, PR_FALSE);
             break;
+        case cecpq3Key:
+        {
+            SECItem pubKeyRaw;
+            rv = PK11_ReadRawAttribute(PK11_TypePubKey, pubKey, CKA_VALUE, &pubKeyRaw);
+            if (rv != SECSuccess)
+                return rv;
+            rv = sslBuffer_Append(buf, pubKeyRaw.data, pubKeyRaw.len);
+            if (rv != SECSuccess)
+                return rv;
+            break;
+        }
         default:
             PORT_Assert(0);
             PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
@@ -362,17 +375,29 @@ tls13_ServerSendKeyShareXtn(const sslSocket *ss, TLSExtensionData *xtnData,
     SECStatus rv;
     sslEphemeralKeyPair *keyPair;
 
-    /* There should be exactly one key share. */
-    PORT_Assert(!PR_CLIST_IS_EMPTY(&ss->ephemeralKeyPairs));
-    PORT_Assert(PR_PREV_LINK(&ss->ephemeralKeyPairs) ==
-                PR_NEXT_LINK(&ss->ephemeralKeyPairs));
+    if (ss->sec.keaGroup->keaType == ssl_kea_cecpq3) {
+        rv = sslBuffer_AppendNumber(buf, ssl_grp_cecpq3, 2);
+        if (rv != SECSuccess)
+            return SECFailure;
+        rv = sslBuffer_AppendNumber(buf, ss->keyShareToSend->len, 2);
+        if (rv != SECSuccess)
+            return SECFailure;
+        rv = sslBuffer_Append(buf, ss->keyShareToSend->data, ss->keyShareToSend->len);
+        if (rv != SECSuccess)
+            return SECFailure;
+    } else {
+        /* There should be exactly one key share. */
+        PORT_Assert(!PR_CLIST_IS_EMPTY(&ss->ephemeralKeyPairs));
+        PORT_Assert(PR_PREV_LINK(&ss->ephemeralKeyPairs) ==
+                    PR_NEXT_LINK(&ss->ephemeralKeyPairs));
 
-    keyPair = (sslEphemeralKeyPair *)PR_NEXT_LINK(&ss->ephemeralKeyPairs);
+        keyPair = (sslEphemeralKeyPair *)PR_NEXT_LINK(&ss->ephemeralKeyPairs);
 
-    rv = tls13_EncodeKeyShareEntry(buf, keyPair->group->name,
-                                   keyPair->keys->pubKey);
-    if (rv != SECSuccess) {
-        return SECFailure;
+        rv = tls13_EncodeKeyShareEntry(buf, keyPair->group->name,
+                                       keyPair->keys->pubKey);
+        if (rv != SECSuccess) {
+            return SECFailure;
+        }
     }
 
     *added = PR_TRUE;
