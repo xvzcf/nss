@@ -128,7 +128,7 @@ typedef enum { SSLAppOpRead = 0,
 #define DTLS_RETRANSMIT_FINISHED_MS 30000
 
 /* default number of entries in namedGroupPreferences */
-#define SSL_NAMED_GROUP_COUNT 31
+#define SSL_NAMED_GROUP_COUNT 32
 
 /* The maximum DH and RSA bit-length supported. */
 #define SSL_MAX_DH_KEY_BITS 8192
@@ -1027,6 +1027,7 @@ struct sslSocketStr {
      * these on the client side.  The server inserts a single value into this
      * list for all versions. */
     PRCList /*<sslEphemeralKeyPair>*/ ephemeralKeyPairs;
+    SECItem *keyShareToSend;
 
     /* Callbacks */
     SSLAuthCertificate authCertificate;
@@ -1979,6 +1980,10 @@ SECStatus SSLExp_SetTls13GreaseEchSize(PRFileDesc *fd, PRUint8 size);
 
 SECStatus SSLExp_EnableTls13BackendEch(PRFileDesc *fd, PRBool enabled);
 SECStatus SSLExp_CallExtensionWriterOnEchInner(PRFileDesc *fd, PRBool enabled);
+
+/* CECPQ3 */
+
+SECStatus tls13_GenerateCECPQ3KeyPair(const sslSocket *ss, const sslNamedGroupDef *group, sslEphemeralKeyPair **keyPair);
 
 SEC_END_PROTOS
 

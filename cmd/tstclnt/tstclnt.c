@@ -304,7 +304,7 @@ PrintParameterUsage()
     fprintf(stderr, "%-20s Disconnect and reconnect up to N times total\n", "-L");
     fprintf(stderr, "%-20s Comma separated list of enabled groups for TLS key exchange.\n"
                     "%-20s The following values are valid:\n"
-                    "%-20s P256, P384, P521, x25519, FF2048, FF3072, FF4096, FF6144, FF8192\n",
+                    "%-20s CECPQ3, P256, P384, P521, x25519, FF2048, FF3072, FF4096, FF6144, FF8192\n",
             "-I", "", "");
     fprintf(stderr, "%-20s Comma separated list of signature schemes in preference order.\n"
                     "%-20s The following values are valid:\n"

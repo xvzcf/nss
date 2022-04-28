@@ -26,6 +26,7 @@
 #include "tls13hashstate.h"
 #include "tls13subcerts.h"
 #include "tls13psk.h"
+#include "blapi.h"
 
 static SECStatus tls13_SetCipherSpec(sslSocket *ss, PRUint16 epoch,
                                      SSLSecretDirection install,
@@ -385,6 +386,12 @@ tls13_CreateKeyShare(sslSocket *ss, const sslNamedGroupDef *groupDef,
             params = ssl_GetDHEParams(groupDef);
             PORT_Assert(params->name != ssl_grp_ffdhe_custom);
             rv = ssl_CreateDHEKeyPair(groupDef, params, keyPair);
+            if (rv != SECSuccess) {
+                return SECFailure;
+            }
+            break;
+        case ssl_kea_cecpq3:
+            rv = tls13_GenerateCECPQ3KeyPair(ss, groupDef, keyPair);
             if (rv != SECSuccess) {
                 return SECFailure;
             }
@@ -2332,30 +2339,47 @@ tls13_HandleClientKeyShare(sslSocket *ss, TLS13KeyShareEntry *peerShare)
 
     tls13_SetKeyExchangeType(ss, peerShare->group);
 
-    /* Generate our key */
-    rv = tls13_AddKeyShare(ss, peerShare->group);
-    if (rv != SECSuccess) {
-        return rv;
+    if (peerShare->group->name == ssl_grp_cecpq3) {
+        SECItem *sharedSecret = NULL;
+        ss->keyShareToSend = NULL;
+        rv = CECPQ3_Encapsulate(&ss->keyShareToSend, &sharedSecret, &peerShare->key_exchange);
+        if (rv != SECSuccess) {
+            return rv;
+        }
+
+        PK11SlotInfo *slot = PK11_GetBestSlot(CKM_HKDF_DERIVE, NULL);
+        if (!slot) {
+            return SECFailure;
+        }
+        ss->ssl3.hs.dheSecret = PK11_ImportDataKey(slot, CKM_HKDF_DERIVE, PK11_OriginUnwrap, CKA_DERIVE, sharedSecret, NULL);
+        if (ss->ssl3.hs.dheSecret == NULL) {
+            return SECFailure;
+        }
+    } else {
+        /* Generate our key */
+        rv = tls13_AddKeyShare(ss, peerShare->group);
+        if (rv != SECSuccess) {
+            return rv;
+        }
+
+        /* We should have exactly one key share. */
+        PORT_Assert(!PR_CLIST_IS_EMPTY(&ss->ephemeralKeyPairs));
+        PORT_Assert(PR_PREV_LINK(&ss->ephemeralKeyPairs) ==
+                    PR_NEXT_LINK(&ss->ephemeralKeyPairs));
+
+        keyPair = ((sslEphemeralKeyPair *)PR_NEXT_LINK(&ss->ephemeralKeyPairs));
+        ss->sec.keaKeyBits = SECKEY_PublicKeyStrengthInBits(keyPair->keys->pubKey);
+
+        rv = tls13_HandleKeyShare(ss, peerShare, keyPair->keys,
+                                  tls13_GetHash(ss),
+                                  &ss->ssl3.hs.dheSecret);
     }
-
-    /* We should have exactly one key share. */
-    PORT_Assert(!PR_CLIST_IS_EMPTY(&ss->ephemeralKeyPairs));
-    PORT_Assert(PR_PREV_LINK(&ss->ephemeralKeyPairs) ==
-                PR_NEXT_LINK(&ss->ephemeralKeyPairs));
-
-    keyPair = ((sslEphemeralKeyPair *)PR_NEXT_LINK(&ss->ephemeralKeyPairs));
-    ss->sec.keaKeyBits = SECKEY_PublicKeyStrengthInBits(keyPair->keys->pubKey);
-
     /* Register the sender */
     rv = ssl3_RegisterExtensionSender(ss, &ss->xtnData, ssl_tls13_key_share_xtn,
                                       tls13_ServerSendKeyShareXtn);
     if (rv != SECSuccess) {
         return SECFailure; /* Error code set already. */
     }
-
-    rv = tls13_HandleKeyShare(ss, peerShare, keyPair->keys,
-                              tls13_GetHash(ss),
-                              &ss->ssl3.hs.dheSecret);
     return rv; /* Error code set already. */
 }
 
@@ -3120,6 +3144,11 @@ tls13_SetKeyExchangeType(sslSocket *ss, const sslNamedGroupDef *group)
                 ss->statelessResume ? ssl_kea_dh_psk : ssl_kea_dh;
             ss->sec.keaType = ssl_kea_dh;
             break;
+        case ssl_kea_cecpq3:
+            // TODO(goutam): Look into resumption
+            ss->ssl3.hs.kea_def_mutable.exchKeyType = ssl_kea_cecpq3;
+            ss->sec.keaType = ssl_kea_cecpq3;
+            break;
         default:
             PORT_Assert(0);
     }
@@ -3159,12 +3188,37 @@ tls13_HandleServerKeyShare(sslSocket *ss)
     }
 
     PORT_Assert(ssl_NamedGroupEnabled(ss, entry->group));
+    if (entry->group->name == ssl_grp_cecpq3) {
+        SECItem privateKey;
+        SECItem *sharedSecret = NULL;
 
-    rv = tls13_HandleKeyShare(ss, entry, keyPair->keys,
-                              tls13_GetHash(ss),
-                              &ss->ssl3.hs.dheSecret);
-    if (rv != SECSuccess)
-        return SECFailure; /* Error code set by caller. */
+        rv = PK11_ReadRawAttribute(PK11_TypePrivKey, keyPair->keys->privKey, CKA_VALUE, &privateKey);
+        if (rv != SECSuccess) {
+            return rv;
+        }
+
+        rv = CECPQ3_Decapsulate(&sharedSecret, &entry->key_exchange, &privateKey);
+        if (rv != SECSuccess) {
+            return rv;
+        }
+
+        PK11SlotInfo *slot = PK11_GetBestSlot(CKM_HKDF_DERIVE, NULL);
+        if (!slot) {
+            rv = SECFailure;
+            return rv;
+        }
+        ss->ssl3.hs.dheSecret = PK11_ImportDataKey(slot, CKM_HKDF_DERIVE, PK11_OriginUnwrap, CKA_DERIVE, sharedSecret, NULL);
+        if (ss->ssl3.hs.dheSecret == NULL) {
+            rv = SECFailure;
+            return rv;
+        }
+    } else {
+        rv = tls13_HandleKeyShare(ss, entry, keyPair->keys,
+                                  tls13_GetHash(ss),
+                                  &ss->ssl3.hs.dheSecret);
+        if (rv != SECSuccess)
+            return SECFailure; /* Error code set by caller. */
+    }
 
     tls13_SetKeyExchangeType(ss, entry->group);
     ss->sec.keaKeyBits = SECKEY_PublicKeyStrengthInBits(keyPair->keys->pubKey);
