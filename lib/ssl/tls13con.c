@@ -54,6 +54,7 @@ static SECStatus
 tls13_SendCertificateVerify(sslSocket *ss, SECKEYPrivateKey *privKey);
 static SECStatus tls13_HandleCertificateVerify(
     sslSocket *ss, PRUint8 *b, PRUint32 length);
+static SECStatus tls13_HandleClientKEMTLS(sslSocket *ss);
 static SECStatus tls13_RecoverWrappedSharedSecret(sslSocket *ss,
                                                   sslSessionID *sid);
 static SECStatus
@@ -81,6 +82,8 @@ static SECStatus tls13_VerifyFinished(sslSocket *ss, SSLHandshakeType message,
                                       PRUint8 *b, PRUint32 length,
                                       const SSL3Hashes *hashes);
 static SECStatus tls13_ClientHandleFinished(sslSocket *ss,
+                                            PRUint8 *b, PRUint32 length);
+static SECStatus tls13_ClientHandleKEMTLSFinished(sslSocket *ss,
                                             PRUint8 *b, PRUint32 length);
 static SECStatus tls13_ServerHandleFinished(sslSocket *ss,
                                             PRUint8 *b, PRUint32 length);
@@ -118,6 +121,11 @@ const char kHkdfLabelTrafficUpdate[] = "traffic upd";
 const char kHkdfPurposeKey[] = "key";
 const char kHkdfPurposeSn[] = "sn";
 const char kHkdfPurposeIv[] = "iv";
+
+/* For KEMTLS. */
+const char kHkdfLabelAuthenticatedHandshakeTrafficSecret[] = "ahs traffic";
+const char kHkdfLabelClientFinishedSecret[] = "c finished";
+const char kHkdfLabelServerFinishedSecret[] = "s finished";
 
 const char keylogLabelClientEarlyTrafficSecret[] = "CLIENT_EARLY_TRAFFIC_SECRET";
 const char keylogLabelClientHsTrafficSecret[] = "CLIENT_HANDSHAKE_TRAFFIC_SECRET";
@@ -970,6 +978,9 @@ tls13_HandlePostHelloHandshakeMessage(sslSocket *ss, PRUint8 *b, PRUint32 length
             if (ss->sec.isServer) {
                 return tls13_ServerHandleFinished(ss, b, length);
             } else {
+                if(ss->doingKEMTLS) {
+                    return tls13_ClientHandleKEMTLSFinished(ss, b, length);
+                }
                 return tls13_ClientHandleFinished(ss, b, length);
             }
 
@@ -1239,6 +1250,7 @@ tls13_ComputeHandshakeSecrets(sslSocket *ss)
     SECStatus rv;
     PK11SymKey *derivedSecret = NULL;
     PK11SymKey *newSecret = NULL;
+    const char *hkdfLabel;
 
     PK11_FreeSymKey(ss->ssl3.hs.dheSecret);
     ss->ssl3.hs.dheSecret = NULL;
@@ -1246,10 +1258,16 @@ tls13_ComputeHandshakeSecrets(sslSocket *ss)
     SSL_TRC(5, ("%d: TLS13[%d]: compute handshake secrets (%s)",
                 SSL_GETPID(), ss->fd, SSL_ROLE(ss)));
 
+    if (ss->doingKEMTLS) {
+        hkdfLabel = kHkdfLabelAuthenticatedHandshakeTrafficSecret;
+    } else {
+        hkdfLabel = kHkdfLabelHandshakeTrafficSecret;
+    }
+
     /* Now compute |*HsTrafficSecret| */
     rv = tls13_DeriveSecretWrap(ss, ss->ssl3.hs.currentSecret,
                                 kHkdfLabelClient,
-                                kHkdfLabelHandshakeTrafficSecret,
+                                hkdfLabel,
                                 keylogLabelClientHsTrafficSecret,
                                 &ss->ssl3.hs.clientHsTrafficSecret);
     if (rv != SECSuccess) {
@@ -1258,7 +1276,7 @@ tls13_ComputeHandshakeSecrets(sslSocket *ss)
     }
     rv = tls13_DeriveSecretWrap(ss, ss->ssl3.hs.currentSecret,
                                 kHkdfLabelServer,
-                                kHkdfLabelHandshakeTrafficSecret,
+                                hkdfLabel,
                                 keylogLabelServerHsTrafficSecret,
                                 &ss->ssl3.hs.serverHsTrafficSecret);
     if (rv != SECSuccess) {
@@ -2342,7 +2360,7 @@ tls13_HandleClientKeyShare(sslSocket *ss, TLS13KeyShareEntry *peerShare)
     if (peerShare->group->name == ssl_grp_cecpq3) {
         SECItem *sharedSecret = NULL;
         ss->keyShareToSend = NULL;
-        rv = CECPQ3_Encapsulate(&ss->keyShareToSend, &sharedSecret, &peerShare->key_exchange);
+        rv = CECPQ3_Encapsulate(&ss->keyShareToSend, &sharedSecret, peerShare->key_exchange.data);
         if (rv != SECSuccess) {
             return rv;
         }
@@ -3097,6 +3115,8 @@ tls13_HandleServerHelloPart2(sslSocket *ss, const PRUint8 *savedMsg, PRUint32 sa
     if (rv != SECSuccess) {
         return SECFailure; /* error code is set. */
     }
+    PK11_FreeSymKey(ss->ssl3.hs.ephemeralSecretKEMTLS);
+    ss->ssl3.hs.ephemeralSecretKEMTLS = PK11_ReferenceSymKey(ss->ssl3.hs.currentSecret);
 
     rv = tls13_MaybeHandleEchSignal(ss, savedMsg, savedLength, PR_FALSE);
     if (rv != SECSuccess) {
@@ -3197,7 +3217,7 @@ tls13_HandleServerKeyShare(sslSocket *ss)
             return rv;
         }
 
-        rv = CECPQ3_Decapsulate(&sharedSecret, &entry->key_exchange, &privateKey);
+        rv = CECPQ3_Decapsulate(&sharedSecret, entry->key_exchange.data, privateKey.data);
         if (rv != SECSuccess) {
             return rv;
         }
@@ -3547,7 +3567,16 @@ tls13_HandleCertificate(sslSocket *ss, PRUint8 *b, PRUint32 length)
     }
     SECKEY_UpdateCertPQG(ss->sec.peerCert);
 
-    return ssl3_AuthCertificate(ss); /* sets ss->ssl3.hs.ws */
+    rv = ssl3_AuthCertificate(ss); /* sets ss->ssl3.hs.ws */
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+
+    if(ss->doingKEMTLS) {
+        return tls13_HandleClientKEMTLS(ss);
+    }
+
+    return SECSuccess;
 }
 
 /* Add context to the hash functions as described in
@@ -4645,6 +4674,131 @@ loser:
     return SECFailure;
 }
 
+// TODO(goutam): Reject if support for DCs was not advertised.
+SECStatus
+tls13_HandleClientKEMTLS(sslSocket *ss)
+{
+    sslDelegatedCredential *dc = ss->xtnData.peerDelegCred;
+    SECKEYPublicKey *pubKey = NULL;
+    SECItem *sharedSecretID = NULL;
+    SECStatus rv;
+
+    SSL_TRC(3, ("%d: TLS13[%d]: Authenticating server via KEMTLS.",
+                SSL_GETPID(), ss->fd));
+    PORT_Assert(ss->opt.noLocks || ssl_HaveRecvBufLock(ss));
+    PORT_Assert(ss->opt.noLocks || ssl_HaveSSL3HandshakeLock(ss));
+
+    /* Set the |spki| to the DC public key after verifying the DC.
+     */
+
+    /* NOTE: Normally, DelegatedCredential.cred.expected_cert_verify_algorithm is expected
+     * to match CertificateVerify.scheme, but in KEMTLS, a CertificateVerify message
+     * is not sent.
+     */
+
+    /* Verify the DC has three steps: (1) use the peer's end-entity
+     * certificate to verify DelegatedCredential.signature, (2) check that
+     * the certificate has the correct key usage, and (3) check that the DC
+     * hasn't expired.
+     */
+    rv = tls13_VerifyDelegatedCredential(ss, dc);
+    if (rv != SECSuccess) { /* Calls FATAL_ERROR() */
+        return SECFailure;
+    }
+
+    pubKey = SECKEY_ExtractPublicKey(dc->spki);
+    if (pubKey == NULL) {
+        ssl_MapLowLevelError(SSL_ERROR_EXTRACT_PUBLIC_KEY_FAILURE);
+        return SECFailure;
+    }
+    if (!(pubKey->u.cecpq3PublicValue[0] == (ssl_grp_cecpq3 >> 8) &&
+          pubKey->u.cecpq3PublicValue[1] == (ssl_grp_cecpq3 & 0xFF))) {
+        ssl_MapLowLevelError(SSL_ERROR_EXTRACT_PUBLIC_KEY_FAILURE);
+        return SECFailure;
+    }
+
+    /* Generate the client KEM shared secret and ciphertext. */
+    SECItem *ciphertext = NULL;
+    rv = CECPQ3_Encapsulate(&ciphertext, &sharedSecretID, &pubKey->u.cecpq3PublicValue[2]);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+
+    /* Send the ciphertext. */
+    rv = tls13_SetCipherSpec(ss, TrafficKeyHandshake, ssl_secret_write, PR_FALSE);
+    if (rv != SECSuccess) {
+        FATAL_ERROR(ss, SSL_ERROR_INIT_CIPHER_SUITE_FAILURE, internal_error);
+        return SECFailure;
+    }
+
+    rv = ssl3_AppendHandshakeHeader(ss, ssl_hs_client_key_exchange, ciphertext->len);
+    if (rv != SECSuccess) {
+        return SECFailure; /* err set by ssl3_AppendHandshake */
+    }
+    rv = ssl3_AppendHandshake(ss, ciphertext->data, ciphertext->len);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+    ssl_GetXmitBufLock(ss); /*******************************/
+    rv = ssl3_FlushHandshake(ss, 0);
+    ssl_ReleaseXmitBufLock(ss); /*******************************/
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+
+    /* Generate the new key schedule. */
+    PK11SlotInfo *slot = PK11_GetBestSlot(CKM_HKDF_DERIVE, NULL);
+    if (!slot) {
+        rv = SECFailure;
+        return rv;
+    }
+    ss->ssl3.hs.dheSecret = PK11_ImportDataKey(slot, CKM_HKDF_DERIVE, PK11_OriginUnwrap, CKA_DERIVE, sharedSecretID, NULL);
+    if (ss->ssl3.hs.dheSecret == NULL) {
+        rv = SECFailure;
+        return rv;
+    }
+
+    ss->ssl3.hs.currentSecret = ss->ssl3.hs.ephemeralSecretKEMTLS;
+    rv = tls13_ComputeHandshakeSecret(ss);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+    rv = tls13_ComputeHandshakeSecrets(ss);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+
+    rv = tls13_SetCipherSpec(ss, TrafficKeyHandshake,
+                             ssl_secret_read, PR_FALSE);
+    if (rv != SECSuccess) {
+        FATAL_ERROR(ss, SSL_ERROR_INIT_CIPHER_SUITE_FAILURE, internal_error);
+        return SECFailure;
+    }
+    rv = tls13_SetCipherSpec(ss, TrafficKeyHandshake,
+                             ssl_secret_write, PR_FALSE);
+    if (rv != SECSuccess) {
+        FATAL_ERROR(ss, SSL_ERROR_INIT_CIPHER_SUITE_FAILURE, internal_error);
+        return SECFailure;
+    }
+
+    ssl_GetXmitBufLock(ss); /*******************************/
+    rv = tls13_SendFinished(ss, ss->ssl3.hs.currentSecret);
+    if (rv != SECSuccess) {
+        return SECFailure; /* err code was set. */
+    }
+
+    rv = ssl3_FlushHandshake(ss, 0);
+    if (rv != SECSuccess) {
+        /* No point in sending an alert here because we're not going to
+         * be able to send it if we couldn't flush the handshake. */
+        return SECFailure;
+    }
+    ssl_ReleaseXmitBufLock(ss); /*******************************/
+
+    SECKEY_DestroyPublicKey(pubKey);
+    return SECSuccess;
+}
+
 /* Compute the PSK binder hash over:
  * Client HRR prefix, if present in ss->ssl3.hs.messages or ss->ssl3.hs.echInnerMessages,
  * |len| bytes of |buf| */
@@ -4782,8 +4936,18 @@ tls13_ComputeFinished(sslSocket *ss, PK11SymKey *baseKey,
     CK_MECHANISM_TYPE macAlg = tls13_GetHmacMechanismFromHash(hashType);
     SECItem param = { siBuffer, NULL, 0 };
     unsigned int outputLenUint;
-    const char *label = kHkdfLabelFinishedSecret;
+    const char *label;
     PK11SymKey *secret = NULL;
+
+    if (ss->doingKEMTLS) {
+        if(sending == PR_TRUE) {
+            label = kHkdfLabelClientFinishedSecret;
+        } else {
+            label = kHkdfLabelServerFinishedSecret;
+        }
+    } else {
+        label = kHkdfLabelFinishedSecret;
+    }
 
     PORT_Assert(baseKey);
     SSL_TRC(3, ("%d: TLS13[%d]: %s calculate finished",
@@ -4973,6 +5137,89 @@ tls13_ClientHandleFinished(sslSocket *ss, PRUint8 *b, PRUint32 length)
     }
 
     return tls13_SendClientSecondRound(ss);
+}
+
+static SECStatus
+tls13_ClientHandleKEMTLSFinished(sslSocket *ss, PRUint8 *b, PRUint32 length)
+{
+    SECStatus rv;
+    SSL3Hashes hashes;
+
+    PORT_Assert(ss->opt.noLocks || ssl_HaveRecvBufLock(ss));
+    PORT_Assert(ss->opt.noLocks || ssl_HaveSSL3HandshakeLock(ss));
+
+    SSL_TRC(3, ("%d: TLS13[%d]: client KEMTLS handle finished handshake",
+                SSL_GETPID(), ss->fd));
+
+    rv = TLS13_CHECK_HS_STATE(ss, SSL_ERROR_RX_UNEXPECTED_FINISHED, wait_finished);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+    ss->ssl3.hs.endOfFlight = PR_TRUE;
+
+    rv = tls13_ComputeHandshakeHashes(ss, &hashes);
+    if (rv != SECSuccess) {
+        LOG_ERROR(ss, SEC_ERROR_LIBRARY_FAILURE);
+        return SECFailure;
+    }
+
+    rv = tls13_DeriveSecretWrap(ss, ss->ssl3.hs.currentSecret,
+                                kHkdfLabelClient,
+                                kHkdfLabelApplicationTrafficSecret,
+                                keylogLabelClientTrafficSecret,
+                                &ss->ssl3.hs.clientTrafficSecret);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+
+    rv = ssl_HashHandshakeMessage(ss, ssl_hs_finished, b, length);
+    if (rv != SECSuccess) {
+        FATAL_ERROR(ss, SEC_ERROR_LIBRARY_FAILURE, internal_error);
+        return SECFailure;
+    }
+    rv = tls13_VerifyFinished(ss, ssl_hs_finished, ss->ssl3.hs.currentSecret, b, length, &hashes);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+
+    rv = tls13_DeriveSecretWrap(ss, ss->ssl3.hs.currentSecret,
+                                kHkdfLabelServer,
+                                kHkdfLabelApplicationTrafficSecret,
+                                keylogLabelServerTrafficSecret,
+                                &ss->ssl3.hs.serverTrafficSecret);
+    if (rv != SECSuccess) {
+        FATAL_ERROR(ss, SEC_ERROR_LIBRARY_FAILURE, internal_error);
+        return SECFailure;
+    }
+    rv = tls13_DeriveSecretWrap(ss, ss->ssl3.hs.currentSecret,
+                                NULL, kHkdfLabelExporterMasterSecret,
+                                keylogLabelExporterSecret,
+                                &ss->ssl3.hs.exporterSecret);
+    if (rv != SECSuccess) {
+        FATAL_ERROR(ss, SEC_ERROR_LIBRARY_FAILURE, internal_error);
+        return SECFailure;
+    }
+
+    rv = tls13_SetCipherSpec(ss, TrafficKeyApplicationData,
+                             ssl_secret_read, PR_FALSE);
+    if (rv != SECSuccess) {
+        FATAL_ERROR(ss, SEC_ERROR_LIBRARY_FAILURE, internal_error);
+        return SECFailure;
+    }
+    rv = tls13_SetCipherSpec(ss, TrafficKeyApplicationData,
+                             ssl_secret_write, PR_FALSE);
+    if (rv != SECSuccess) {
+        PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
+        return SECFailure;
+    }
+
+    rv = tls13_ComputeFinalSecrets(ss);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+
+    /* The handshake is now finished */
+    return tls13_FinishHandshake(ss);
 }
 
 static SECStatus

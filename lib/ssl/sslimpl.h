@@ -245,7 +245,7 @@ typedef struct {
 #define MAX_DTLS_SRTP_CIPHER_SUITES 4
 
 /* MAX_SIGNATURE_SCHEMES allows for all the values we support. */
-#define MAX_SIGNATURE_SCHEMES 18
+#define MAX_SIGNATURE_SCHEMES 19
 
 typedef struct sslOptionsStr {
     /* If SSL_SetNextProtoNego has been called, then this contains the
@@ -762,6 +762,9 @@ typedef struct SSL3HandshakeStateStr {
     sslBuffer greaseEchBuf;     /* Client: Remember GREASE ECH, as advertised, for CH2 (HRR case).
                                   Server: Remember HRR Grease Value, for transcript calculations */
     PRBool echInvalidExtension; /* Client: True if the server offered an invalid extension for the ClientHelloInner */
+
+    /* For auth via KEMTLS */
+    PK11SymKey *ephemeralSecretKEMTLS;
 } SSL3HandshakeState;
 
 #define SSL_ASSERT_HASHES_EMPTY(ss)                                  \
@@ -1146,6 +1149,9 @@ struct sslSocketStr {
 
     /* An out-of-band PSK. */
     sslPsk *psk;
+
+    /* KEMTLS */
+    PRBool doingKEMTLS;
 };
 
 struct sslSelfEncryptKeysStr {

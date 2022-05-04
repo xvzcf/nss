@@ -666,6 +666,16 @@ seckey_ExtractPublicKey(const CERTSubjectPublicKeyInfo *spki)
                 }
                 break;
 
+            case SEC_OID_KEMTLS_WITH_CECPQ3:
+                if (newOs.len == 0) {
+                    PORT_SetError(SEC_ERROR_INPUT_LEN);
+                    break;
+                }
+                pubk->keyType = cecpq3Key;
+
+                PORT_Memcpy(pubk->u.cecpq3PublicValue, newOs.data, newOs.len);
+                return pubk;
+
             default:
                 PORT_SetError(SEC_ERROR_UNSUPPORTED_KEYALG);
                 break;
@@ -1034,6 +1044,8 @@ SECKEY_PublicKeyStrengthInBits(const SECKEYPublicKey *pubk)
             break;
         case ecKey:
             bitSize = SECKEY_ECParamsToKeySize(&pubk->u.ec.DEREncodedParams);
+            break;
+        case cecpq3Key:
             break;
         default:
             PORT_SetError(SEC_ERROR_INVALID_KEY);

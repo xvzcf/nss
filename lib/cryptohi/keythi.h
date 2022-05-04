@@ -9,6 +9,7 @@
 #include "pkcs11t.h"
 #include "secmodt.h"
 #include "prclist.h"
+#include "blapit.h"
 
 /*
 ** RFC 4055 Section 1.2 specifies three different RSA key types.
@@ -190,6 +191,7 @@ struct SECKEYPublicKeyStr {
         SECKEYKEAPublicKey kea;
         SECKEYFortezzaPublicKey fortezza;
         SECKEYECPublicKey ec;
+        uint8_t cecpq3PublicValue[CECPQ3_PUBLICKEYBYTES];
     } u;
 };
 typedef struct SECKEYPublicKeyStr SECKEYPublicKey;

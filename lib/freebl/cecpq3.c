@@ -12,8 +12,6 @@
 
 #include "kyber512/api.h"
 
-// TODO(goutam): Generate the classical key
-
 SECStatus
 CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey)
 {
@@ -39,7 +37,7 @@ CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey)
 }
 
 SECStatus
-CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *publicKey)
+CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey)
 {
     *ciphertext = SECITEM_AllocItem(NULL, *ciphertext, PQCLEAN_KYBER512_CLEAN_CRYPTO_CIPHERTEXTBYTES);
     if (ciphertext == NULL) {
@@ -53,7 +51,7 @@ CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *public
         return SECFailure;
     }
 
-    int rc = PQCLEAN_KYBER512_CLEAN_crypto_kem_enc((*ciphertext)->data, (*sharedSecret)->data, publicKey->data);
+    int rc = PQCLEAN_KYBER512_CLEAN_crypto_kem_enc((*ciphertext)->data, (*sharedSecret)->data, publicKey);
     if (rc != 0) {
         return SECFailure;
     }
@@ -62,7 +60,7 @@ CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *public
 }
 
 SECStatus
-CECPQ3_Decapsulate(SECItem **sharedSecret, SECItem *ciphertext, SECItem *secretKey)
+CECPQ3_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey)
 {
     *sharedSecret = SECITEM_AllocItem(NULL, *sharedSecret, PQCLEAN_KYBER512_CLEAN_CRYPTO_BYTES);
     if (sharedSecret == NULL) {
@@ -70,7 +68,7 @@ CECPQ3_Decapsulate(SECItem **sharedSecret, SECItem *ciphertext, SECItem *secretK
         return SECFailure;
     }
 
-    int rc = PQCLEAN_KYBER512_CLEAN_crypto_kem_dec((*sharedSecret)->data, ciphertext->data, secretKey->data);
+    int rc = PQCLEAN_KYBER512_CLEAN_crypto_kem_dec((*sharedSecret)->data, ciphertext, secretKey);
     if (rc != 0) {
         return SECFailure;
     }

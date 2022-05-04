@@ -4318,6 +4318,7 @@ ssl_SignatureSchemeToHashType(SSLSignatureScheme scheme)
         case ssl_sig_none:
         case ssl_sig_ed25519:
         case ssl_sig_ed448:
+        case ssl_kemtls_with_cecpq3:
             break;
     }
     PORT_Assert(0);
@@ -4592,6 +4593,7 @@ ssl_IsSupportedSignatureScheme(SSLSignatureScheme scheme)
         case ssl_sig_none:
         case ssl_sig_ed25519:
         case ssl_sig_ed448:
+        case ssl_kemtls_with_cecpq3:
             return PR_FALSE;
     }
     return PR_FALSE;
@@ -11514,6 +11516,11 @@ ssl_SetAuthKeyBits(sslSocket *ss, const SECKEYPublicKey *pubKey)
             minKey = ss->sec.authKeyBits;
             break;
 
+        case cecpq3Key:
+            /* Don't check strength, we're doing KEMTLS. */
+            minKey = ss->sec.authKeyBits;
+            break;
+
         default:
             FATAL_ERROR(ss, SEC_ERROR_LIBRARY_FAILURE, internal_error);
             return SECFailure;
@@ -11641,7 +11648,12 @@ ssl3_AuthCertificate(sslSocket *ss)
 
     if (!ss->sec.isServer) {
         if (ss->version >= SSL_LIBRARY_VERSION_TLS_1_3) {
-            TLS13_SET_HS_STATE(ss, wait_cert_verify);
+            if(ss->sec.signatureScheme == ssl_kemtls_with_cecpq3) {
+                ss->doingKEMTLS = PR_TRUE;
+                TLS13_SET_HS_STATE(ss, wait_finished);
+            } else {
+                TLS13_SET_HS_STATE(ss, wait_cert_verify);
+            }
         } else {
             /* Ephemeral suites require ServerKeyExchange. */
             if (ss->ssl3.hs.kea_def->ephemeral) {

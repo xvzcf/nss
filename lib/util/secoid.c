@@ -602,6 +602,10 @@ CONST_OID evIncorporationCountry[] = { EV_NAME_ATTRIBUTE, 3 };
  */
 CONST_OID curve25519[] = { 0x2B, 0x06, 0x01, 0x04, 0x01, 0xDA, 0x47, 0x0F, 0x01 };
 
+/* https://github.com/cloudflare/go/blob/cf-pq-kemtls/src/crypto/x509/x509.go#L484 */
+/* 1.3.6.1.4.1.44363.45.11 */
+CONST_OID kemtls_with_cecpq3[] = { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0xDA, 0x4B, 0x2D, 0x0B };
+
 #define OI(x)                                  \
     {                                          \
         siDEROID, (unsigned char *)x, sizeof x \
@@ -1794,6 +1798,11 @@ const static SECOidData oids[SEC_OID_TOTAL] = {
     OD(pkixExtendedKeyUsageIPsecUser,
        SEC_OID_EXT_KEY_USAGE_IPSEC_USER,
        "IPsec User",
+       CKM_INVALID_MECHANISM, INVALID_CERT_EXTENSION),
+
+    OD(kemtls_with_cecpq3,
+       SEC_OID_KEMTLS_WITH_CECPQ3,
+       "KEMTLS With CECPQ3",
        CKM_INVALID_MECHANISM, INVALID_CERT_EXTENSION),
 };
 

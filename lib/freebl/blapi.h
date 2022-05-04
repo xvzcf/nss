@@ -1796,8 +1796,8 @@ extern int EC_GetPointSize(const ECParams *params);
 */
 
 extern SECStatus CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey);
-extern SECStatus CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *publicKey);
-extern SECStatus CECPQ3_Decapsulate(SECItem **sharedSecret, SECItem *ciphertext, SECItem *secretKey);
+extern SECStatus CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey);
+extern SECStatus CECPQ3_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey);
 
 SEC_END_PROTOS
 

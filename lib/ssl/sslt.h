@@ -160,6 +160,12 @@ typedef enum {
      * This should not be passed to SSL_SignatureSchemePrefSet(); this
      * signature scheme is always used and cannot be disabled. */
     ssl_sig_rsa_pkcs1_sha1md5 = 0x10101,
+
+    /* For authentication via KEMs */
+    /* Code point taken from:
+     * https://github.com/cloudflare/go/blob/cf-pq-kemtls/src/crypto/tls/common.go#L516
+     */
+    ssl_kemtls_with_cecpq3 = 0xfe01,
 } SSLSignatureScheme;
 
 /* Deprecated names maintained only for source compatibility. */
@@ -260,7 +266,7 @@ typedef enum {
     ssl_grp_ffdhe_8192 = 260,
     ssl_grp_none = 65537,        /* special value */
     ssl_grp_ffdhe_custom = 65538, /* special value */
-    ssl_grp_cecpq3 = 0x023A
+    ssl_grp_cecpq3 = 0x01fc
 } SSLNamedGroup;
 
 typedef struct SSLExtraServerCertDataStr {

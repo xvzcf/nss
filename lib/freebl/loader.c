@@ -2456,7 +2456,7 @@ CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey)
 }
 
 SECStatus
-CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *publicKey)
+CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey)
 {
     if (!vector && PR_SUCCESS != freebl_RunLoaderOnce())
         return SECFailure;
@@ -2464,7 +2464,7 @@ CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *public
 }
 
 SECStatus
-CECPQ3_Decapsulate(SECItem **sharedSecret, SECItem *ciphertext, SECItem *secretKey)
+CECPQ3_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey)
 {
     if (!vector && PR_SUCCESS != freebl_RunLoaderOnce())
         return SECFailure;

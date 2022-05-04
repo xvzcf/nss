@@ -1309,17 +1309,22 @@ tls13_ClientSendDelegatedCredentialsXtn(const sslSocket *ss,
      * schemes. */
     SSLSignatureScheme filtered[MAX_SIGNATURE_SCHEMES] = { 0 };
     unsigned int filteredCount = 0;
+
+    /* We only support KEM keys in DCs. */
+    filtered[0] = ssl_kemtls_with_cecpq3;
+
     SECStatus rv = ssl3_FilterSigAlgs(ss, ss->vrange.max,
                                       PR_TRUE /* disableRsae */,
                                       PR_FALSE /* forCert */,
                                       MAX_SIGNATURE_SCHEMES,
-                                      filtered,
+                                      &filtered[1],
                                       &filteredCount);
     if (rv != SECSuccess) {
         return SECFailure;
     }
 
     /* If no schemes available for the DC extension, don't send it. */
+    filteredCount += 1;
     if (!filteredCount) {
         return SECSuccess;
     }
