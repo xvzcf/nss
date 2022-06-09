@@ -225,12 +225,13 @@ tls13_MaybeSetDelegatedCredential(sslSocket *ss)
         return SECFailure;
     }
 
-    if (!ssl_SignatureSchemeEnabled(ss, scheme) ||
-        !ssl_CanUseSignatureScheme(scheme,
-                                   ss->xtnData.delegCredSigSchemes,
-                                   ss->xtnData.numDelegCredSigSchemes,
-                                   PR_FALSE /* requireSha1 */,
-                                   doesRsaPss)) {
+    if (scheme != ssl_kemtls_with_cecpq3 &&
+        (!ssl_SignatureSchemeEnabled(ss, scheme) ||
+         !ssl_CanUseSignatureScheme(scheme,
+                                    ss->xtnData.delegCredSigSchemes,
+                                    ss->xtnData.numDelegCredSigSchemes,
+                                    PR_FALSE /* requireSha1 */,
+                                    doesRsaPss))) {
         return SECSuccess;
     }
 
@@ -643,6 +644,14 @@ tls13_MakeDcSpki(const SECKEYPublicKey *dcPub, SSLSignatureScheme dcCertVerifyAl
                     return NULL;
             }
             if (keyScheme != dcCertVerifyAlg) {
+                PORT_SetError(SSL_ERROR_INCORRECT_SIGNATURE_ALGORITHM);
+                return NULL;
+            }
+            return SECKEY_CreateSubjectPublicKeyInfo(dcPub);
+        }
+
+        case cecpq3Key: {
+            if (dcCertVerifyAlg != ssl_kemtls_with_cecpq3) {
                 PORT_SetError(SSL_ERROR_INCORRECT_SIGNATURE_ALGORITHM);
                 return NULL;
             }

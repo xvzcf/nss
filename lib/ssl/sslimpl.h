@@ -1152,6 +1152,7 @@ struct sslSocketStr {
 
     /* KEMTLS */
     PRBool doingKEMTLS;
+    PRBool computeKEMTLSHandshakeSecrets;
 };
 
 struct sslSelfEncryptKeysStr {

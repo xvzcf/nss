@@ -147,6 +147,8 @@ static PRThread *acceptorThread;
 
 static PRLogModuleInfo *lm;
 
+static PRBool enableDelegatedCredentials = PR_FALSE;
+
 #define PRINTF   \
     if (verbose) \
     printf
@@ -2175,13 +2177,39 @@ server_main(
      * new, prefered API. */
     for (i = 0; i < certNicknameIndex; i++) {
         if (cert[i] != NULL) {
-            const SSLExtraServerCertData ocspData = {
-                ssl_auth_null, NULL, certStatus[i], NULL, NULL, NULL
-            };
+            SECItem delegCred;
+            SECKEYPublicKey *dcPubKey = NULL;
+            SECKEYPrivateKey *dcPrivKey = NULL;
 
+            if (enableDelegatedCredentials) {
+                // TODO(goutam): To keep things simple for now, just blindly
+                // generate a DC. This can be refined in the future.
+
+                PK11SlotInfo *slot = PK11_GetBestSlot(CKM_NSS_CECPQ3_KEY_GEN, NULL);
+                if (!slot) {
+                    errExit("PK11_GetBestSlot");
+                }
+                dcPrivKey = PK11_GenerateKeyPair(slot, CKM_NSS_CECPQ3_KEY_GEN, NULL, &dcPubKey,
+                                                 PR_FALSE, PR_FALSE, NULL);
+                PK11_FreeSlot(slot);
+
+                // SSLExp_DelegateCredential
+                secStatus = SSL_DelegateCredential(cert[i], privKey[i],
+                                                   dcPubKey,
+                                                   ssl_kemtls_with_cecpq3,
+                                                   60 * 60 * 24 * 7, /* 1 week (seconds) */
+                                                   PR_Now(),
+                                                   &delegCred);
+                if (secStatus != SECSuccess) {
+                    errExit("SSL_DelegateCredential");
+                }
+            }
+            const SSLExtraServerCertData extraCertData = {
+                ssl_auth_null, NULL, certStatus[i], NULL, &delegCred, dcPrivKey
+            };
             secStatus = SSL_ConfigServerCert(model_sock, cert[i],
-                                             privKey[i], &ocspData,
-                                             sizeof(ocspData));
+                                             privKey[i], &extraCertData,
+                                             sizeof(extraCertData));
             if (secStatus != SECSuccess)
                 errExit("SSL_ConfigServerCert");
         }
@@ -2540,7 +2568,7 @@ main(int argc, char **argv)
     ** XXX: 'B', and 'q' were used in the past but removed
     **      in 3.28, please leave some time before resuing those. */
     optstate = PL_CreateOptState(argc, argv,
-                                 "2:A:C:DEGH:I:J:L:M:NP:QRS:T:U:V:W:X:YZa:bc:d:e:f:g:hi:jk:lmn:op:rst:uvw:x:yz:");
+                                 "2:A:C:DEFGH:I:J:L:M:NP:QRS:T:U:V:W:X:YZa:bc:d:e:f:g:hi:jk:lmn:op:rst:uvw:x:yz:");
     while ((status = PL_GetNextOpt(optstate)) == PL_OPT_OK) {
         ++optionsFound;
         switch (optstate->option) {
@@ -2563,6 +2591,10 @@ main(int argc, char **argv)
 
             case 'E':
                 enablePostHandshakeAuth = PR_TRUE;
+                break;
+
+            case 'F':
+                enableDelegatedCredentials = PR_TRUE;
                 break;
 
             case 'H':

@@ -1209,6 +1209,17 @@ SECKEY_CopyPublicKey(const SECKEYPublicKey *pubk)
             rv = SECITEM_CopyItem(arena, &copyk->u.ec.publicValue,
                                   &pubk->u.ec.publicValue);
             break;
+        case cecpq3Key:
+            // TODO(goutam): Make it possible at some point to copy from
+            // u.cecpq3PublicValue.
+            SECItem pubKeyRaw;
+            SECKEYPublicKey *unConstKey = (SECKEYPublicKey*)pubk;
+            rv = PK11_ReadRawAttribute(PK11_TypePubKey, unConstKey, CKA_VALUE, &pubKeyRaw);
+            if (rv != SECSuccess) {
+                break;
+            }
+            PORT_Memcpy(copyk->u.cecpq3PublicValue, pubKeyRaw.data, pubKeyRaw.len);
+            break;
         case nullKey:
             return copyk;
         default:
@@ -1472,6 +1483,32 @@ seckey_CreateSubjectPublicKeyInfo_helper(SECKEYPublicKey *pubk)
 
                 rv = SECITEM_CopyItem(arena, &spki->subjectPublicKey,
                                       &pubk->u.ec.publicValue);
+
+                if (rv == SECSuccess) {
+                    /*
+                     * The stored value is supposed to be a BIT_STRING,
+                     * so convert the length.
+                     */
+                    spki->subjectPublicKey.len <<= 3;
+                    /*
+                     * We got a good one; return it.
+                     */
+                    return spki;
+                }
+                break;
+            case cecpq3Key:
+                SECItem cecpq3PublicValue;
+                rv = SECITEM_MakeItem(NULL, &cecpq3PublicValue, &pubk->u.cecpq3PublicValue[0], CECPQ3_PUBLICKEYBYTES);
+                if (rv != SECSuccess)
+                    break;
+
+                rv = SECOID_SetAlgorithmID(arena, &spki->algorithm,
+                                           SEC_OID_KEMTLS_WITH_CECPQ3,
+                                           &params);
+                if (rv != SECSuccess)
+                    break;
+
+                rv = SECITEM_CopyItem(arena, &spki->subjectPublicKey, &cecpq3PublicValue);
 
                 if (rv == SECSuccess) {
                     /*

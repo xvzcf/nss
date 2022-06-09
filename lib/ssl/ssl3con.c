@@ -4345,6 +4345,9 @@ PRBool
 ssl_SignatureSchemeValid(SSLSignatureScheme scheme, SECOidTag spkiOid,
                          PRBool isTls13)
 {
+    if (isTls13 && scheme == ssl_kemtls_with_cecpq3) {
+        return PR_TRUE;
+    }
     if (!ssl_IsSupportedSignatureScheme(scheme)) {
         return PR_FALSE;
     }
@@ -4473,6 +4476,9 @@ ssl_SignatureSchemeFromSpki(const CERTSubjectPublicKeyInfo *spki,
      * TLS versions allow the same EC key to be used with different hashes. */
     if (isTls13 && spkiOid == SEC_OID_ANSIX962_EC_PUBLIC_KEY) {
         return ssl_SignatureSchemeFromEcSpki(spki, scheme);
+    }
+    if (isTls13 && spkiOid == SEC_OID_KEMTLS_WITH_CECPQ3) {
+        return ssl_kemtls_with_cecpq3;
     }
 
     *scheme = ssl_sig_none;
@@ -4692,6 +4698,10 @@ ssl_SignatureSchemeToAuthType(SSLSignatureScheme scheme)
         case ssl_sig_dsa_sha384:
         case ssl_sig_dsa_sha512:
             return ssl_auth_dsa;
+        case ssl_kemtls_with_cecpq3:
+            /* Shouldn't matter, we don't rely on this field.
+             * TODO(goutam): Clean it up eventually. */
+            return ssl_auth_null;
 
         default:
             PORT_Assert(0);
