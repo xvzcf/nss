@@ -114,6 +114,7 @@ tls13_EncodeKeyShareEntry(sslBuffer *buf, SSLNamedGroup group,
             rv = ssl_AppendPaddedDHKeyShare(buf, pubKey, PR_FALSE);
             break;
         case cecpq3Key:
+        {
             SECItem pubKeyRaw;
             rv = PK11_ReadRawAttribute(PK11_TypePubKey, pubKey, CKA_VALUE, &pubKeyRaw);
             if (rv != SECSuccess)
@@ -122,6 +123,7 @@ tls13_EncodeKeyShareEntry(sslBuffer *buf, SSLNamedGroup group,
             if (rv != SECSuccess)
                 return rv;
             break;
+        }
         default:
             PORT_Assert(0);
             PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);

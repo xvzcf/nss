@@ -4757,17 +4757,23 @@ tls13_HandleClientKEMTLS(sslSocket *ss)
         ssl_MapLowLevelError(SSL_ERROR_EXTRACT_PUBLIC_KEY_FAILURE);
         return SECFailure;
     }
-    if (!(pubKey->u.cecpq3PublicValue[0] == (ssl_grp_cecpq3 >> 8) &&
-          pubKey->u.cecpq3PublicValue[1] == (ssl_grp_cecpq3 & 0xFF))) {
-        ssl_MapLowLevelError(SSL_ERROR_EXTRACT_PUBLIC_KEY_FAILURE);
-        return SECFailure;
-    }
 
     /* Generate the client KEM shared secret and ciphertext. */
     SECItem *ciphertext = NULL;
-    rv = CECPQ3_Encapsulate(&ciphertext, &sharedSecretID, &pubKey->u.cecpq3PublicValue[2]);
-    if (rv != SECSuccess) {
-        return SECFailure;
+    if ((pubKey->u.cecpq3PublicValue[0] == (ssl_grp_cecpq3 >> 8) &&
+          pubKey->u.cecpq3PublicValue[1] == (ssl_grp_cecpq3 & 0xFF))) {
+        // TODO(xvzcf): This encoding should be removed from cf-go's KEMTLS
+        // implementation.
+        rv = CECPQ3_Encapsulate(&ciphertext, &sharedSecretID, &pubKey->u.cecpq3PublicValue[2]);
+        if (rv != SECSuccess) {
+            return SECFailure;
+        }
+    }
+    else {
+        rv = CECPQ3_Encapsulate(&ciphertext, &sharedSecretID, &pubKey->u.cecpq3PublicValue[0]);
+        if (rv != SECSuccess) {
+            return SECFailure;
+        }
     }
 
     /* Send the ciphertext. */

@@ -1210,6 +1210,7 @@ SECKEY_CopyPublicKey(const SECKEYPublicKey *pubk)
                                   &pubk->u.ec.publicValue);
             break;
         case cecpq3Key:
+        {
             // TODO(goutam): Make it possible at some point to copy from
             // u.cecpq3PublicValue.
             SECItem pubKeyRaw;
@@ -1220,6 +1221,7 @@ SECKEY_CopyPublicKey(const SECKEYPublicKey *pubk)
             }
             PORT_Memcpy(copyk->u.cecpq3PublicValue, pubKeyRaw.data, pubKeyRaw.len);
             break;
+        }
         case nullKey:
             return copyk;
         default:
@@ -1497,6 +1499,7 @@ seckey_CreateSubjectPublicKeyInfo_helper(SECKEYPublicKey *pubk)
                 }
                 break;
             case cecpq3Key:
+            {
                 SECItem cecpq3PublicValue;
                 rv = SECITEM_MakeItem(NULL, &cecpq3PublicValue, &pubk->u.cecpq3PublicValue[0], CECPQ3_PUBLICKEYBYTES);
                 if (rv != SECSuccess)
@@ -1522,6 +1525,7 @@ seckey_CreateSubjectPublicKeyInfo_helper(SECKEYPublicKey *pubk)
                     return spki;
                 }
                 break;
+            }
             case dhKey: /* later... */
 
                 break;

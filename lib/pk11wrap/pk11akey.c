@@ -45,10 +45,12 @@ pk11_MakeIDFromPublicKey(SECKEYPublicKey *pubKey)
             pubKeyIndex = &pubKey->u.ec.publicValue;
             break;
         case cecpq3Key:
+        {
             unsigned char buf[1] = {0};
             pubKeyIndex = SECITEM_AllocItem(NULL, pubKeyIndex, 1);
             pubKeyIndex->data = buf;
             break;
+        }
         default:
             return NULL;
     }
