@@ -52,7 +52,7 @@
         'tls13psk.c',
         'tls13replay.c',
         'tls13subcerts.c',
-        'tls13cecpq3.c',
+        'tls13x25519Kyber512.c',
       ],
       'conditions': [
         [ 'OS=="win"', {

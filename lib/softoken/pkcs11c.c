@@ -5677,13 +5677,13 @@ NSC_GenerateKeyPair(CK_SESSION_HANDLE hSession,
             PORT_FreeArena(ecPriv->ecParams.arena, PR_TRUE);
             break;
 
-        case CKM_NSS_CECPQ3_KEY_GEN:
-            key_type = CKK_NSS_CECPQ3;
+        case CKM_NSS_X25519KYBER512DRAFT00_KEY_GEN:
+            key_type = CKK_NSS_X25519KYBER512DRAFT00;
 
             SECItem *pub = NULL;
             SECItem *priv = NULL;
 
-            rv = CECPQ3_Generate(&pub, &priv);
+            rv = X25519Kyber512Draft00_Generate(&pub, &priv);
             if (rv != SECSuccess) {
                 crv = sftk_MapCryptError(PORT_GetError());
                 break;
@@ -5786,7 +5786,7 @@ NSC_GenerateKeyPair(CK_SESSION_HANDLE hSession,
                                   &cktrue, sizeof(CK_BBOOL));
     }
 
-    if (crv == CKR_OK && key_type != CKK_NSS_CECPQ3) {
+    if (crv == CKR_OK && key_type != CKK_NSS_X25519KYBER512DRAFT00) {
         /* Perform FIPS 140-2 pairwise consistency check. */
         crv = sftk_PairwiseConsistencyCheck(hSession, slot,
                                             publicKey, privateKey, key_type);

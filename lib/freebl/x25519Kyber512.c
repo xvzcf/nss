@@ -59,7 +59,7 @@ cleanup:
 }
 
 SECStatus
-CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey)
+X25519Kyber512Draft00_Generate(SECItem **publicKey, SECItem **secretKey)
 {
     SECStatus rv = SECFailure;
 
@@ -105,7 +105,7 @@ CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey)
 }
 
 SECStatus
-CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *publicKey)
+X25519Kyber512Draft00_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *publicKey)
 {
     SECStatus rv = SECFailure;
     ECParams params;
@@ -137,7 +137,7 @@ CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, SECItem *public
 }
 
 SECStatus
-CECPQ3_Decapsulate(SECItem **sharedSecret, SECItem *ciphertext, SECItem *secretKey)
+X25519Kyber512Draft00_Decapsulate(SECItem **sharedSecret, SECItem *ciphertext, SECItem *secretKey)
 {
     *sharedSecret = SECITEM_AllocItem(NULL, *sharedSecret, 32 + PQCLEAN_KYBER512_CLEAN_CRYPTO_BYTES);
     if (*sharedSecret == NULL) {

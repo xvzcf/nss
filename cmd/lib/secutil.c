@@ -4186,9 +4186,6 @@ groupNameToNamedGroup(char *name)
         }
     }
     if (PL_strlen(name) == 6) {
-        if (!strncmp(name, "CECPQ3", 6)) {
-            return ssl_grp_cecpq3;
-        }
         if (!strncmp(name, "x25519", 6)) {
             return ssl_grp_ec_curve25519;
         }
@@ -4207,6 +4204,9 @@ groupNameToNamedGroup(char *name)
         if (!strncmp(name, "FF8192", 6)) {
             return ssl_grp_ffdhe_8192;
         }
+    }
+    if (!strncmp(name, "X25519Kyber512Draft00", 21)) {
+        return ssl_grp_x25519Kyber512Draft00;
     }
 
     return ssl_grp_none;

@@ -83,7 +83,7 @@ typedef enum {
     ssl_kea_ecdh_psk = 5,
     ssl_kea_dh_psk = 6,
     ssl_kea_tls13_any = 7,
-    ssl_kea_cecpq3 = 8,
+    ssl_kea_x25519Kyber512Draft00 = 8,
     ssl_kea_size /* number of ssl_kea_ algorithms */
 } SSLKEAType;
 
@@ -260,7 +260,7 @@ typedef enum {
     ssl_grp_ffdhe_8192 = 260,
     ssl_grp_none = 65537,        /* special value */
     ssl_grp_ffdhe_custom = 65538, /* special value */
-    ssl_grp_cecpq3 = 0xfe30
+    ssl_grp_x25519Kyber512Draft00 = 0xfe30
 } SSLNamedGroup;
 
 typedef struct SSLExtraServerCertDataStr {

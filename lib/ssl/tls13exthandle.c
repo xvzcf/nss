@@ -83,8 +83,8 @@ tls13_SizeOfKeyShareEntry(const SECKEYPublicKey *pubKey)
             return 2 + 2 + pubKey->u.ec.publicValue.len;
         case dhKey:
             return 2 + 2 + pubKey->u.dh.prime.len;
-        case cecpq3Key:
-            return 2 + 2 + 32 + CECPQ3_PUBLICKEYBYTES;
+        case x25519Kyber512Draft00Key:
+            return 2 + 2 + 32 + X25519KYBER512DRAFT00_PUBLICKEYBYTES;
         default:
             PORT_Assert(0);
     }
@@ -113,7 +113,7 @@ tls13_EncodeKeyShareEntry(sslBuffer *buf, SSLNamedGroup group,
         case dhKey:
             rv = ssl_AppendPaddedDHKeyShare(buf, pubKey, PR_FALSE);
             break;
-        case cecpq3Key:
+        case x25519Kyber512Draft00Key:
         {
             SECItem pubKeyRaw;
             rv = PK11_ReadRawAttribute(PK11_TypePubKey, pubKey, CKA_VALUE, &pubKeyRaw);
@@ -375,8 +375,8 @@ tls13_ServerSendKeyShareXtn(const sslSocket *ss, TLSExtensionData *xtnData,
     SECStatus rv;
     sslEphemeralKeyPair *keyPair;
 
-    if (ss->sec.keaGroup->keaType == ssl_kea_cecpq3) {
-        rv = sslBuffer_AppendNumber(buf, ssl_grp_cecpq3, 2);
+    if (ss->sec.keaGroup->keaType == ssl_kea_x25519Kyber512Draft00) {
+        rv = sslBuffer_AppendNumber(buf, ssl_grp_x25519Kyber512Draft00, 2);
         if (rv != SECSuccess)
             return SECFailure;
         rv = sslBuffer_AppendNumber(buf, ss->keyShareToSend->len, 2);

@@ -834,9 +834,9 @@ struct FREEBLVectorStr {
 
     /* Add new function pointers at the end of this struct and bump
      * FREEBL_VERSION at the beginning of this file. */
-    SECStatus (*p_CECPQ3_Generate)(SECItem **publicKey, SECItem **secretKey);
-    SECStatus (*p_CECPQ3_Encapsulate)(SECItem **ciphertext, SECItem **sharedSecret, SECItem *publicKey);
-    SECStatus (*p_CECPQ3_Decapsulate)(SECItem **sharedSecret, SECItem *ciphertext, SECItem *privateKey);
+    SECStatus (*p_X25519Kyber512Draft00_Generate)(SECItem **publicKey, SECItem **secretKey);
+    SECStatus (*p_X25519Kyber512Draft00_Encapsulate)(SECItem **ciphertext, SECItem **sharedSecret, SECItem *publicKey);
+    SECStatus (*p_X25519Kyber512Draft00_Decapsulate)(SECItem **sharedSecret, SECItem *ciphertext, SECItem *privateKey);
 };
 
 typedef struct FREEBLVectorStr FREEBLVector;

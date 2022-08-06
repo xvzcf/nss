@@ -177,7 +177,7 @@ PK11_IsUserCert(PK11SlotInfo *slot, CERTCertificate *cert,
                 break;
             case keaKey:
             case fortezzaKey:
-            case cecpq3Key:
+            case x25519Kyber512Draft00Key:
             case nullKey:
                 /* fall through and return false */
                 break;

@@ -151,7 +151,7 @@ CSRCS = \
 	tlsprfalg.c \
 	jpake.c \
 	secmpi.c \
-	cecpq3.c \
+	x25519Kyber512.c \
 	$(MPI_SRCS) \
 	$(MPCPU_SRCS) \
 	$(ECL_SRCS) \

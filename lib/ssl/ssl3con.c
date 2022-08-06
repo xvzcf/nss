@@ -377,7 +377,7 @@ static const CK_MECHANISM_TYPE kea_alg_defs[] = {
     CKM_ECDH1_DERIVE,      /* ssl_kea_ecdh_psk */
     CKM_DH_PKCS_DERIVE,    /* ssl_kea_dh_psk */
     CKM_INVALID_MECHANISM, /* ssl_kea_tls13_any */
-    CKM_INVALID_MECHANISM, /* ssl_kea_cecpq3 */
+    CKM_INVALID_MECHANISM, /* ssl_kea_x25519Kyber512Draft00 */
 };
 PR_STATIC_ASSERT(PR_ARRAY_SIZE(kea_alg_defs) == ssl_kea_size);
 
@@ -736,8 +736,8 @@ ssl_KEAEnabled(const sslSocket *ss, SSLKEAType keaType)
         case ssl_kea_ecdh_psk:
             return ssl_NamedGroupTypeEnabled(ss, ssl_kea_ecdh);
 
-        case ssl_kea_cecpq3:
-            return ssl_NamedGroupTypeEnabled(ss, ssl_kea_cecpq3);
+        case ssl_kea_x25519Kyber512Draft00:
+            return ssl_NamedGroupTypeEnabled(ss, ssl_kea_x25519Kyber512Draft00);
 
         case ssl_kea_tls13_any:
             return PR_TRUE;

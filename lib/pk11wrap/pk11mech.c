@@ -425,8 +425,8 @@ PK11_GetKeyType(CK_MECHANISM_TYPE type, unsigned long len)
         case CKM_TLS_PRF_GENERAL:
         case CKM_NSS_TLS_PRF_GENERAL_SHA256:
             return CKK_GENERIC_SECRET;
-        case CKM_NSS_CECPQ3_KEY_GEN:
-            return CKK_NSS_CECPQ3;
+        case CKM_NSS_X25519KYBER512DRAFT00_KEY_GEN:
+            return CKK_NSS_X25519KYBER512DRAFT00;
         default:
             return pk11_lookup(type)->keyType;
     }

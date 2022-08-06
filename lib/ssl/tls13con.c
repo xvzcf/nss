@@ -390,8 +390,8 @@ tls13_CreateKeyShare(sslSocket *ss, const sslNamedGroupDef *groupDef,
                 return SECFailure;
             }
             break;
-        case ssl_kea_cecpq3:
-            rv = tls13_GenerateCECPQ3KeyPair(ss, groupDef, keyPair);
+        case ssl_kea_x25519Kyber512Draft00:
+            rv = tls13_GenerateX25519Kyber512Draft00KeyPair(ss, groupDef, keyPair);
             if (rv != SECSuccess) {
                 return SECFailure;
             }
@@ -2339,10 +2339,10 @@ tls13_HandleClientKeyShare(sslSocket *ss, TLS13KeyShareEntry *peerShare)
 
     tls13_SetKeyExchangeType(ss, peerShare->group);
 
-    if (peerShare->group->name == ssl_grp_cecpq3) {
+    if (peerShare->group->name == ssl_grp_x25519Kyber512Draft00) {
         SECItem *sharedSecret = NULL;
         ss->keyShareToSend = NULL;
-        rv = CECPQ3_Encapsulate(&ss->keyShareToSend, &sharedSecret, &peerShare->key_exchange);
+        rv = X25519Kyber512Draft00_Encapsulate(&ss->keyShareToSend, &sharedSecret, &peerShare->key_exchange);
         if (rv != SECSuccess) {
             return rv;
         }
@@ -3144,10 +3144,10 @@ tls13_SetKeyExchangeType(sslSocket *ss, const sslNamedGroupDef *group)
                 ss->statelessResume ? ssl_kea_dh_psk : ssl_kea_dh;
             ss->sec.keaType = ssl_kea_dh;
             break;
-        case ssl_kea_cecpq3:
+        case ssl_kea_x25519Kyber512Draft00:
             // TODO(goutam): Look into resumption
-            ss->ssl3.hs.kea_def_mutable.exchKeyType = ssl_kea_cecpq3;
-            ss->sec.keaType = ssl_kea_cecpq3;
+            ss->ssl3.hs.kea_def_mutable.exchKeyType = ssl_kea_x25519Kyber512Draft00;
+            ss->sec.keaType = ssl_kea_x25519Kyber512Draft00;
             break;
         default:
             PORT_Assert(0);
@@ -3188,7 +3188,7 @@ tls13_HandleServerKeyShare(sslSocket *ss)
     }
 
     PORT_Assert(ssl_NamedGroupEnabled(ss, entry->group));
-    if (entry->group->name == ssl_grp_cecpq3) {
+    if (entry->group->name == ssl_grp_x25519Kyber512Draft00) {
         SECItem privateKey;
         SECItem *sharedSecret = NULL;
 
@@ -3197,7 +3197,7 @@ tls13_HandleServerKeyShare(sslSocket *ss)
             return rv;
         }
 
-        rv = CECPQ3_Decapsulate(&sharedSecret, &entry->key_exchange, &privateKey);
+        rv = X25519Kyber512Draft00_Decapsulate(&sharedSecret, &entry->key_exchange, &privateKey);
         if (rv != SECSuccess) {
             return rv;
         }

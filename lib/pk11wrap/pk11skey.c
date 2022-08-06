@@ -2104,7 +2104,7 @@ PK11_PubDerive(SECKEYPrivateKey *privKey, SECKEYPublicKey *pubKey,
         case rsaKey:
         case rsaPssKey:
         case rsaOaepKey:
-        case cecpq3Key:
+        case x25519Kyber512Draft00Key:
         case nullKey:
             PORT_SetError(SEC_ERROR_BAD_KEY);
             break;

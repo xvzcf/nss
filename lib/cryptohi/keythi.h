@@ -34,7 +34,7 @@ typedef enum {
     ecKey = 6,
     rsaPssKey = 7,
     rsaOaepKey = 8,
-    cecpq3Key = 9
+    x25519Kyber512Draft00Key = 9
 } KeyType;
 
 /*

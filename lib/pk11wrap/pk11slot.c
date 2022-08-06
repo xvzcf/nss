@@ -94,7 +94,7 @@ static PK11SlotList
     pk11_randomSlotList,
     pk11_sha256SlotList,
     pk11_sha512SlotList, /* slots do SHA512 and SHA384 */
-    pk11_cecpq3SlotList;
+    pk11_x25519Kyber512Draft00SlotList;
 
 /************************************************************
  * Generic Slot List and Slot List element manipulations
@@ -848,7 +848,7 @@ PK11_InitSlotLists(void)
     pk11_InitSlotListStatic(&pk11_randomSlotList);
     pk11_InitSlotListStatic(&pk11_sha256SlotList);
     pk11_InitSlotListStatic(&pk11_sha512SlotList);
-    pk11_InitSlotListStatic(&pk11_cecpq3SlotList);
+    pk11_InitSlotListStatic(&pk11_x25519Kyber512Draft00SlotList);
     return SECSuccess;
 }
 
@@ -875,7 +875,7 @@ PK11_DestroySlotLists(void)
     pk11_FreeSlotListStatic(&pk11_randomSlotList);
     pk11_FreeSlotListStatic(&pk11_sha256SlotList);
     pk11_FreeSlotListStatic(&pk11_sha512SlotList);
-    pk11_FreeSlotListStatic(&pk11_cecpq3SlotList);
+    pk11_FreeSlotListStatic(&pk11_x25519Kyber512Draft00SlotList);
     return;
 }
 
@@ -954,8 +954,8 @@ PK11_GetSlotList(CK_MECHANISM_TYPE type)
             return &pk11_ideaSlotList;
         case CKM_FAKE_RANDOM:
             return &pk11_randomSlotList;
-        case CKM_NSS_CECPQ3_KEY_GEN:
-            return &pk11_cecpq3SlotList;
+        case CKM_NSS_X25519KYBER512DRAFT00_KEY_GEN:
+            return &pk11_x25519Kyber512Draft00SlotList;
     }
     return NULL;
 }
