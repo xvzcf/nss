@@ -2448,25 +2448,25 @@ CMAC_Destroy(CMACContext *ctx, PRBool free_it)
 }
 
 SECStatus
-CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey)
+Kyber512_Generate(SECItem **publicKey, SECItem **secretKey)
 {
     if (!vector && PR_SUCCESS != freebl_RunLoaderOnce())
         return SECFailure;
-    return (vector->p_CECPQ3_Generate)(publicKey, secretKey);
+    return (vector->p_Kyber512_Generate)(publicKey, secretKey);
 }
 
 SECStatus
-CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey)
+Kyber512_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey)
 {
     if (!vector && PR_SUCCESS != freebl_RunLoaderOnce())
         return SECFailure;
-    return (vector->p_CECPQ3_Encapsulate)(ciphertext, sharedSecret, publicKey);
+    return (vector->p_Kyber512_Encapsulate)(ciphertext, sharedSecret, publicKey);
 }
 
 SECStatus
-CECPQ3_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey)
+Kyber512_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey)
 {
     if (!vector && PR_SUCCESS != freebl_RunLoaderOnce())
         return SECFailure;
-    return (vector->p_CECPQ3_Decapsulate)(sharedSecret, ciphertext, secretKey);
+    return (vector->p_Kyber512_Decapsulate)(sharedSecret, ciphertext, secretKey);
 }

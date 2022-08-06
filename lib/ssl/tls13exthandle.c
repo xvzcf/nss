@@ -83,8 +83,8 @@ tls13_SizeOfKeyShareEntry(const SECKEYPublicKey *pubKey)
             return 2 + 2 + pubKey->u.ec.publicValue.len;
         case dhKey:
             return 2 + 2 + pubKey->u.dh.prime.len;
-        case cecpq3Key:
-            return 2 + 2 + CECPQ3_PUBLICKEYBYTES;
+        case kyber512Key:
+            return 2 + 2 + KYBER512_PUBLICKEYBYTES;
         default:
             PORT_Assert(0);
     }
@@ -113,7 +113,7 @@ tls13_EncodeKeyShareEntry(sslBuffer *buf, SSLNamedGroup group,
         case dhKey:
             rv = ssl_AppendPaddedDHKeyShare(buf, pubKey, PR_FALSE);
             break;
-        case cecpq3Key:
+        case kyber512Key:
         {
             SECItem pubKeyRaw;
             rv = PK11_ReadRawAttribute(PK11_TypePubKey, pubKey, CKA_VALUE, &pubKeyRaw);
@@ -375,8 +375,8 @@ tls13_ServerSendKeyShareXtn(const sslSocket *ss, TLSExtensionData *xtnData,
     SECStatus rv;
     sslEphemeralKeyPair *keyPair;
 
-    if (ss->sec.keaGroup->keaType == ssl_kea_cecpq3) {
-        rv = sslBuffer_AppendNumber(buf, ssl_grp_cecpq3, 2);
+    if (ss->sec.keaGroup->keaType == ssl_kea_kyber512) {
+        rv = sslBuffer_AppendNumber(buf, ssl_grp_kyber512, 2);
         if (rv != SECSuccess)
             return SECFailure;
         rv = sslBuffer_AppendNumber(buf, ss->keyShareToSend->len, 2);
@@ -1313,7 +1313,7 @@ tls13_ClientSendDelegatedCredentialsXtn(const sslSocket *ss,
     unsigned int filteredCount = 0;
 
     /* We only support KEM keys in DCs. */
-    filtered[0] = ssl_kemtls_with_cecpq3;
+    filtered[0] = ssl_kemtls_with_kyber512;
 
     SECStatus rv = ssl3_FilterSigAlgs(ss, ss->vrange.max,
                                       PR_TRUE /* disableRsae */,

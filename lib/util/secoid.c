@@ -604,7 +604,7 @@ CONST_OID curve25519[] = { 0x2B, 0x06, 0x01, 0x04, 0x01, 0xDA, 0x47, 0x0F, 0x01 
 
 /* https://github.com/cloudflare/go/blob/cf-pq-kemtls/src/crypto/x509/x509.go#L484 */
 /* 1.3.6.1.4.1.44363.45.11 */
-CONST_OID kemtls_with_cecpq3[] = { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0xDA, 0x4B, 0x2D, 0x0B };
+CONST_OID kemtls_with_kyber512[] = { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0xDA, 0x4B, 0x2D, 0x0B };
 
 #define OI(x)                                  \
     {                                          \
@@ -1800,9 +1800,9 @@ const static SECOidData oids[SEC_OID_TOTAL] = {
        "IPsec User",
        CKM_INVALID_MECHANISM, INVALID_CERT_EXTENSION),
 
-    OD(kemtls_with_cecpq3,
-       SEC_OID_KEMTLS_WITH_CECPQ3,
-       "KEMTLS With CECPQ3",
+    OD(kemtls_with_kyber512,
+       SEC_OID_KEMTLS_WITH_KYBER512,
+       "KEMTLS With KYBER512",
        CKM_INVALID_MECHANISM, INVALID_CERT_EXTENSION),
 };
 

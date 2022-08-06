@@ -35,7 +35,7 @@ typedef enum {
     ecKey = 6,
     rsaPssKey = 7,
     rsaOaepKey = 8,
-    cecpq3Key = 9
+    kyber512Key = 9
 } KeyType;
 
 /*
@@ -191,7 +191,7 @@ struct SECKEYPublicKeyStr {
         SECKEYKEAPublicKey kea;
         SECKEYFortezzaPublicKey fortezza;
         SECKEYECPublicKey ec;
-        uint8_t cecpq3PublicValue[CECPQ3_PUBLICKEYBYTES];
+        uint8_t kyber512PublicValue[KYBER512_PUBLICKEYBYTES];
     } u;
 };
 typedef struct SECKEYPublicKeyStr SECKEYPublicKey;

@@ -377,7 +377,7 @@ static const CK_MECHANISM_TYPE kea_alg_defs[] = {
     CKM_ECDH1_DERIVE,      /* ssl_kea_ecdh_psk */
     CKM_DH_PKCS_DERIVE,    /* ssl_kea_dh_psk */
     CKM_INVALID_MECHANISM, /* ssl_kea_tls13_any */
-    CKM_INVALID_MECHANISM, /* ssl_kea_cecpq3 */
+    CKM_INVALID_MECHANISM, /* ssl_kea_kyber512 */
 };
 PR_STATIC_ASSERT(PR_ARRAY_SIZE(kea_alg_defs) == ssl_kea_size);
 
@@ -736,8 +736,8 @@ ssl_KEAEnabled(const sslSocket *ss, SSLKEAType keaType)
         case ssl_kea_ecdh_psk:
             return ssl_NamedGroupTypeEnabled(ss, ssl_kea_ecdh);
 
-        case ssl_kea_cecpq3:
-            return ssl_NamedGroupTypeEnabled(ss, ssl_kea_cecpq3);
+        case ssl_kea_kyber512:
+            return ssl_NamedGroupTypeEnabled(ss, ssl_kea_kyber512);
 
         case ssl_kea_tls13_any:
             return PR_TRUE;
@@ -4318,7 +4318,7 @@ ssl_SignatureSchemeToHashType(SSLSignatureScheme scheme)
         case ssl_sig_none:
         case ssl_sig_ed25519:
         case ssl_sig_ed448:
-        case ssl_kemtls_with_cecpq3:
+        case ssl_kemtls_with_kyber512:
             break;
     }
     PORT_Assert(0);
@@ -4345,7 +4345,7 @@ PRBool
 ssl_SignatureSchemeValid(SSLSignatureScheme scheme, SECOidTag spkiOid,
                          PRBool isTls13)
 {
-    if (isTls13 && scheme == ssl_kemtls_with_cecpq3) {
+    if (isTls13 && scheme == ssl_kemtls_with_kyber512) {
         return PR_TRUE;
     }
     if (!ssl_IsSupportedSignatureScheme(scheme)) {
@@ -4477,8 +4477,8 @@ ssl_SignatureSchemeFromSpki(const CERTSubjectPublicKeyInfo *spki,
     if (isTls13 && spkiOid == SEC_OID_ANSIX962_EC_PUBLIC_KEY) {
         return ssl_SignatureSchemeFromEcSpki(spki, scheme);
     }
-    if (isTls13 && spkiOid == SEC_OID_KEMTLS_WITH_CECPQ3) {
-        return ssl_kemtls_with_cecpq3;
+    if (isTls13 && spkiOid == SEC_OID_KEMTLS_WITH_KYBER512) {
+        return ssl_kemtls_with_kyber512;
     }
 
     *scheme = ssl_sig_none;
@@ -4599,7 +4599,7 @@ ssl_IsSupportedSignatureScheme(SSLSignatureScheme scheme)
         case ssl_sig_none:
         case ssl_sig_ed25519:
         case ssl_sig_ed448:
-        case ssl_kemtls_with_cecpq3:
+        case ssl_kemtls_with_kyber512:
             return PR_FALSE;
     }
     return PR_FALSE;
@@ -4698,7 +4698,7 @@ ssl_SignatureSchemeToAuthType(SSLSignatureScheme scheme)
         case ssl_sig_dsa_sha384:
         case ssl_sig_dsa_sha512:
             return ssl_auth_dsa;
-        case ssl_kemtls_with_cecpq3:
+        case ssl_kemtls_with_kyber512:
             /* Shouldn't matter, we don't rely on this field.
              * TODO(goutam): Clean it up eventually. */
             return ssl_auth_null;
@@ -11526,7 +11526,7 @@ ssl_SetAuthKeyBits(sslSocket *ss, const SECKEYPublicKey *pubKey)
             minKey = ss->sec.authKeyBits;
             break;
 
-        case cecpq3Key:
+        case kyber512Key:
             /* Don't check strength, we're doing KEMTLS. */
             minKey = ss->sec.authKeyBits;
             break;
@@ -11658,7 +11658,7 @@ ssl3_AuthCertificate(sslSocket *ss)
 
     if (!ss->sec.isServer) {
         if (ss->version >= SSL_LIBRARY_VERSION_TLS_1_3) {
-            if(ss->sec.signatureScheme == ssl_kemtls_with_cecpq3) {
+            if(ss->sec.signatureScheme == ssl_kemtls_with_kyber512) {
                 ss->doingKEMTLS = PR_TRUE;
                 TLS13_SET_HS_STATE(ss, wait_finished);
             } else {

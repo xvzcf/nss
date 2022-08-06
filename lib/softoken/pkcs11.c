@@ -607,8 +607,8 @@ static const struct mechanismList mechanisms[] = {
     { CKM_NSS_IKE_PRF_DERIVE, { 8, 64, CKF_DERIVE }, PR_TRUE },
     { CKM_NSS_IKE1_PRF_DERIVE, { 8, 64, CKF_DERIVE }, PR_TRUE },
     { CKM_NSS_IKE1_APP_B_PRF_DERIVE, { 8, 255 * 64, CKF_DERIVE }, PR_TRUE },
-    /* --------------------CECPQ3 ----------------------- */
-    { CKM_NSS_CECPQ3_KEY_GEN, { 0, 0, CKF_GENERATE }, PR_TRUE },
+    /* --------------------KYBER512 ----------------------- */
+    { CKM_NSS_KYBER512_KEY_GEN, { 0, 0, CKF_GENERATE }, PR_TRUE },
 };
 static const CK_ULONG mechanismCount = sizeof(mechanisms) / sizeof(mechanisms[0]);
 
@@ -1050,7 +1050,7 @@ sftk_handlePublicKeyObject(SFTKSession *session, SFTKObject *object,
             recover = CK_FALSE;
             wrap = CK_FALSE;
             break;
-        case CKK_NSS_CECPQ3:
+        case CKK_NSS_KYBER512:
             derive = CK_TRUE;
             verify = CK_FALSE;
             encrypt = CK_FALSE;
@@ -1256,7 +1256,7 @@ sftk_handlePrivateKeyObject(SFTKSession *session, SFTKObject *object, CK_KEY_TYP
             derive = CK_TRUE;
             createObjectInfo = PR_FALSE;
             break;
-        case CKK_NSS_CECPQ3:
+        case CKK_NSS_KYBER512:
             if (!sftk_hasAttribute(object, CKA_VALUE)) {
                 return CKR_TEMPLATE_INCOMPLETE;
             }
@@ -1948,7 +1948,7 @@ sftk_GetPubKey(SFTKObject *object, CK_KEY_TYPE key_type,
                 crv = CKR_ATTRIBUTE_VALUE_INVALID;
             }
             break;
-        case CKK_NSS_CECPQ3:
+        case CKK_NSS_KYBER512:
             crv = CKR_OK;
             break;
         default:
@@ -2104,7 +2104,7 @@ sftk_mkPrivKey(SFTKObject *object, CK_KEY_TYPE key_type, CK_RV *crvp)
 #endif
             }
             break;
-        case CKK_NSS_CECPQ3:
+        case CKK_NSS_KYBER512:
             break;
         default:
             crv = CKR_KEY_TYPE_INCONSISTENT;

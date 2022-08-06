@@ -1792,12 +1792,12 @@ extern SECStatus EC_CopyParams(PLArenaPool *arena, ECParams *dstParams,
 extern int EC_GetPointSize(const ECParams *params);
 
 /******************************************************
-** CECPQ3 algorithms
+** Kyber512 algorithms
 */
 
-extern SECStatus CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey);
-extern SECStatus CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey);
-extern SECStatus CECPQ3_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey);
+extern SECStatus Kyber512_Generate(SECItem **publicKey, SECItem **secretKey);
+extern SECStatus Kyber512_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey);
+extern SECStatus Kyber512_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey);
 
 SEC_END_PROTOS
 

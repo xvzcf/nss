@@ -11,7 +11,7 @@
 #include "blapi.h"
 
 SECStatus
-tls13_GenerateCECPQ3KeyPair(const sslSocket *ss,
+tls13_GenerateKyber512KeyPair(const sslSocket *ss,
                             const sslNamedGroupDef *group,
                             sslEphemeralKeyPair **keyPair)
 {
@@ -19,12 +19,12 @@ tls13_GenerateCECPQ3KeyPair(const sslSocket *ss,
     SECKEYPublicKey *pubKey = NULL;
     sslEphemeralKeyPair *pair;
 
-    PK11SlotInfo *slot = PK11_GetBestSlot(CKM_NSS_CECPQ3_KEY_GEN, NULL);
+    PK11SlotInfo *slot = PK11_GetBestSlot(CKM_NSS_KYBER512_KEY_GEN, NULL);
     if (!slot) {
         return SECFailure;
     }
 
-    privKey = PK11_GenerateKeyPair(slot, CKM_NSS_CECPQ3_KEY_GEN, NULL, &pubKey,
+    privKey = PK11_GenerateKeyPair(slot, CKM_NSS_KYBER512_KEY_GEN, NULL, &pubKey,
                                  PR_FALSE, PR_FALSE, NULL);
     PK11_FreeSlot(slot);
 

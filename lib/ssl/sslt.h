@@ -83,7 +83,7 @@ typedef enum {
     ssl_kea_ecdh_psk = 5,
     ssl_kea_dh_psk = 6,
     ssl_kea_tls13_any = 7,
-    ssl_kea_cecpq3 = 8,
+    ssl_kea_kyber512 = 8,
     ssl_kea_size /* number of ssl_kea_ algorithms */
 } SSLKEAType;
 
@@ -165,7 +165,7 @@ typedef enum {
     /* Code point taken from:
      * https://github.com/cloudflare/go/blob/cf-pq-kemtls/src/crypto/tls/common.go#L516
      */
-    ssl_kemtls_with_cecpq3 = 0xfe01,
+    ssl_kemtls_with_kyber512 = 0xfe01,
 } SSLSignatureScheme;
 
 /* Deprecated names maintained only for source compatibility. */
@@ -266,7 +266,7 @@ typedef enum {
     ssl_grp_ffdhe_8192 = 260,
     ssl_grp_none = 65537,        /* special value */
     ssl_grp_ffdhe_custom = 65538, /* special value */
-    ssl_grp_cecpq3 = 0x01fc
+    ssl_grp_kyber512 = 0x01fc
 } SSLNamedGroup;
 
 typedef struct SSLExtraServerCertDataStr {

@@ -1988,9 +1988,9 @@ SECStatus SSLExp_SetTls13GreaseEchSize(PRFileDesc *fd, PRUint8 size);
 SECStatus SSLExp_EnableTls13BackendEch(PRFileDesc *fd, PRBool enabled);
 SECStatus SSLExp_CallExtensionWriterOnEchInner(PRFileDesc *fd, PRBool enabled);
 
-/* CECPQ3 */
+/* Kyber512 */
 
-SECStatus tls13_GenerateCECPQ3KeyPair(const sslSocket *ss, const sslNamedGroupDef *group, sslEphemeralKeyPair **keyPair);
+SECStatus tls13_GenerateKyber512KeyPair(const sslSocket *ss, const sslNamedGroupDef *group, sslEphemeralKeyPair **keyPair);
 
 SEC_END_PROTOS
 

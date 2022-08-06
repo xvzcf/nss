@@ -379,9 +379,9 @@ static const struct FREEBLVectorStr vector =
       ChaCha20_DestroyContext,
 
       /* End of version 3.025 */
-      CECPQ3_Generate,
-      CECPQ3_Encapsulate,
-      CECPQ3_Decapsulate
+      Kyber512_Generate,
+      Kyber512_Encapsulate,
+      Kyber512_Decapsulate
     };
 
 const FREEBLVector*

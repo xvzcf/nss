@@ -666,14 +666,14 @@ seckey_ExtractPublicKey(const CERTSubjectPublicKeyInfo *spki)
                 }
                 break;
 
-            case SEC_OID_KEMTLS_WITH_CECPQ3:
+            case SEC_OID_KEMTLS_WITH_KYBER512:
                 if (newOs.len == 0) {
                     PORT_SetError(SEC_ERROR_INPUT_LEN);
                     break;
                 }
-                pubk->keyType = cecpq3Key;
+                pubk->keyType = kyber512Key;
 
-                PORT_Memcpy(pubk->u.cecpq3PublicValue, newOs.data, newOs.len);
+                PORT_Memcpy(pubk->u.kyber512PublicValue, newOs.data, newOs.len);
                 return pubk;
 
             default:
@@ -1045,7 +1045,7 @@ SECKEY_PublicKeyStrengthInBits(const SECKEYPublicKey *pubk)
         case ecKey:
             bitSize = SECKEY_ECParamsToKeySize(&pubk->u.ec.DEREncodedParams);
             break;
-        case cecpq3Key:
+        case kyber512Key:
             break;
         default:
             PORT_SetError(SEC_ERROR_INVALID_KEY);
@@ -1209,17 +1209,17 @@ SECKEY_CopyPublicKey(const SECKEYPublicKey *pubk)
             rv = SECITEM_CopyItem(arena, &copyk->u.ec.publicValue,
                                   &pubk->u.ec.publicValue);
             break;
-        case cecpq3Key:
+        case kyber512Key:
         {
             // TODO(goutam): Make it possible at some point to copy from
-            // u.cecpq3PublicValue.
+            // u.kyber512PublicValue.
             SECItem pubKeyRaw;
             SECKEYPublicKey *unConstKey = (SECKEYPublicKey*)pubk;
             rv = PK11_ReadRawAttribute(PK11_TypePubKey, unConstKey, CKA_VALUE, &pubKeyRaw);
             if (rv != SECSuccess) {
                 break;
             }
-            PORT_Memcpy(copyk->u.cecpq3PublicValue, pubKeyRaw.data, pubKeyRaw.len);
+            PORT_Memcpy(copyk->u.kyber512PublicValue, pubKeyRaw.data, pubKeyRaw.len);
             break;
         }
         case nullKey:
@@ -1498,20 +1498,20 @@ seckey_CreateSubjectPublicKeyInfo_helper(SECKEYPublicKey *pubk)
                     return spki;
                 }
                 break;
-            case cecpq3Key:
+            case kyber512Key:
             {
-                SECItem cecpq3PublicValue;
-                rv = SECITEM_MakeItem(NULL, &cecpq3PublicValue, &pubk->u.cecpq3PublicValue[0], CECPQ3_PUBLICKEYBYTES);
+                SECItem kyber512PublicValue;
+                rv = SECITEM_MakeItem(NULL, &kyber512PublicValue, &pubk->u.kyber512PublicValue[0], KYBER512_PUBLICKEYBYTES);
                 if (rv != SECSuccess)
                     break;
 
                 rv = SECOID_SetAlgorithmID(arena, &spki->algorithm,
-                                           SEC_OID_KEMTLS_WITH_CECPQ3,
+                                           SEC_OID_KEMTLS_WITH_KYBER512,
                                            &params);
                 if (rv != SECSuccess)
                     break;
 
-                rv = SECITEM_CopyItem(arena, &spki->subjectPublicKey, &cecpq3PublicValue);
+                rv = SECITEM_CopyItem(arena, &spki->subjectPublicKey, &kyber512PublicValue);
 
                 if (rv == SECSuccess) {
                     /*

@@ -228,7 +228,7 @@ typedef int __BLAPI_DEPRECATED __attribute__((deprecated));
  * to use a random value for the nonce in TLS. */
 #define GCMIV_RANDOM_BIRTHDAY_BITS 64
 
-#define CECPQ3_PUBLICKEYBYTES 800
+#define KYBER512_PUBLICKEYBYTES 800
 
 /***************************************************************************
 ** Opaque objects

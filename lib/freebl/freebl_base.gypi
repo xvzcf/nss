@@ -72,7 +72,7 @@
     'kyber512/verify.c',
     'kyber512/fips202.c',
     'kyber512/randombytes.c',
-    'cecpq3.c',
+    'kyber512.c',
   ],
   'conditions': [
     [ 'OS=="linux" or OS=="android"', {

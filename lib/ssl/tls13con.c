@@ -401,8 +401,8 @@ tls13_CreateKeyShare(sslSocket *ss, const sslNamedGroupDef *groupDef,
                 return SECFailure;
             }
             break;
-        case ssl_kea_cecpq3:
-            rv = tls13_GenerateCECPQ3KeyPair(ss, groupDef, keyPair);
+        case ssl_kea_kyber512:
+            rv = tls13_GenerateKyber512KeyPair(ss, groupDef, keyPair);
             if (rv != SECSuccess) {
                 return SECFailure;
             }
@@ -1845,7 +1845,7 @@ tls13_NegotiateAuthentication(sslSocket *ss)
 
     if (ss->xtnData.peerRequestedDelegCred) {
         for (size_t i = 0; i < ss->xtnData.numDelegCredSigSchemes; i++) {
-            if (ss->xtnData.delegCredSigSchemes[i] == ssl_kemtls_with_cecpq3) {
+            if (ss->xtnData.delegCredSigSchemes[i] == ssl_kemtls_with_kyber512) {
                 ss->doingKEMTLS = PR_TRUE;
             }
         }
@@ -2384,10 +2384,10 @@ tls13_HandleClientKeyShare(sslSocket *ss, TLS13KeyShareEntry *peerShare)
 
     tls13_SetKeyExchangeType(ss, peerShare->group);
 
-    if (peerShare->group->name == ssl_grp_cecpq3) {
+    if (peerShare->group->name == ssl_grp_kyber512) {
         SECItem *sharedSecret = NULL;
         ss->keyShareToSend = NULL;
-        rv = CECPQ3_Encapsulate(&ss->keyShareToSend, &sharedSecret, peerShare->key_exchange.data);
+        rv = Kyber512_Encapsulate(&ss->keyShareToSend, &sharedSecret, peerShare->key_exchange.data);
         if (rv != SECSuccess) {
             return rv;
         }
@@ -3210,10 +3210,10 @@ tls13_SetKeyExchangeType(sslSocket *ss, const sslNamedGroupDef *group)
                 ss->statelessResume ? ssl_kea_dh_psk : ssl_kea_dh;
             ss->sec.keaType = ssl_kea_dh;
             break;
-        case ssl_kea_cecpq3:
+        case ssl_kea_kyber512:
             // TODO(goutam): Look into resumption
-            ss->ssl3.hs.kea_def_mutable.exchKeyType = ssl_kea_cecpq3;
-            ss->sec.keaType = ssl_kea_cecpq3;
+            ss->ssl3.hs.kea_def_mutable.exchKeyType = ssl_kea_kyber512;
+            ss->sec.keaType = ssl_kea_kyber512;
             break;
         default:
             PORT_Assert(0);
@@ -3254,7 +3254,7 @@ tls13_HandleServerKeyShare(sslSocket *ss)
     }
 
     PORT_Assert(ssl_NamedGroupEnabled(ss, entry->group));
-    if (entry->group->name == ssl_grp_cecpq3) {
+    if (entry->group->name == ssl_grp_kyber512) {
         SECItem privateKey;
         SECItem *sharedSecret = NULL;
 
@@ -3263,7 +3263,7 @@ tls13_HandleServerKeyShare(sslSocket *ss)
             return rv;
         }
 
-        rv = CECPQ3_Decapsulate(&sharedSecret, entry->key_exchange.data, privateKey.data);
+        rv = Kyber512_Decapsulate(&sharedSecret, entry->key_exchange.data, privateKey.data);
         if (rv != SECSuccess) {
             return rv;
         }
@@ -4760,17 +4760,17 @@ tls13_HandleClientKEMTLS(sslSocket *ss)
 
     /* Generate the client KEM shared secret and ciphertext. */
     SECItem *ciphertext = NULL;
-    if ((pubKey->u.cecpq3PublicValue[0] == (ssl_grp_cecpq3 >> 8) &&
-          pubKey->u.cecpq3PublicValue[1] == (ssl_grp_cecpq3 & 0xFF))) {
+    if ((pubKey->u.kyber512PublicValue[0] == (ssl_grp_kyber512 >> 8) &&
+          pubKey->u.kyber512PublicValue[1] == (ssl_grp_kyber512 & 0xFF))) {
         // TODO(xvzcf): This encoding should be removed from cf-go's KEMTLS
         // implementation.
-        rv = CECPQ3_Encapsulate(&ciphertext, &sharedSecretID, &pubKey->u.cecpq3PublicValue[2]);
+        rv = Kyber512_Encapsulate(&ciphertext, &sharedSecretID, &pubKey->u.kyber512PublicValue[2]);
         if (rv != SECSuccess) {
             return SECFailure;
         }
     }
     else {
-        rv = CECPQ3_Encapsulate(&ciphertext, &sharedSecretID, &pubKey->u.cecpq3PublicValue[0]);
+        rv = Kyber512_Encapsulate(&ciphertext, &sharedSecretID, &pubKey->u.kyber512PublicValue[0]);
         if (rv != SECSuccess) {
             return SECFailure;
         }
@@ -4882,7 +4882,7 @@ tls13_HandleServerKEMTLS(sslSocket *ss, PRUint8 *b, PRUint32 length)
     if (rv != SECSuccess) {
         return rv;
     }
-    rv = CECPQ3_Decapsulate(&sharedSecret, ciphertext, privateKey.data);
+    rv = Kyber512_Decapsulate(&sharedSecret, ciphertext, privateKey.data);
     if (rv != SECSuccess) {
         return SECFailure;
     }

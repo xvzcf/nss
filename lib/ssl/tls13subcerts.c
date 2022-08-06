@@ -225,7 +225,7 @@ tls13_MaybeSetDelegatedCredential(sslSocket *ss)
         return SECFailure;
     }
 
-    if (scheme != ssl_kemtls_with_cecpq3 &&
+    if (scheme != ssl_kemtls_with_kyber512 &&
         (!ssl_SignatureSchemeEnabled(ss, scheme) ||
          !ssl_CanUseSignatureScheme(scheme,
                                     ss->xtnData.delegCredSigSchemes,
@@ -650,8 +650,8 @@ tls13_MakeDcSpki(const SECKEYPublicKey *dcPub, SSLSignatureScheme dcCertVerifyAl
             return SECKEY_CreateSubjectPublicKeyInfo(dcPub);
         }
 
-        case cecpq3Key: {
-            if (dcCertVerifyAlg != ssl_kemtls_with_cecpq3) {
+        case kyber512Key: {
+            if (dcCertVerifyAlg != ssl_kemtls_with_kyber512) {
                 PORT_SetError(SSL_ERROR_INCORRECT_SIGNATURE_ALGORITHM);
                 return NULL;
             }

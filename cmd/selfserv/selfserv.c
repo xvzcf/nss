@@ -231,7 +231,7 @@ PrintParameterUsage()
         "-Q enables ALPN for HTTP/1.1 [RFC7301]\n"
         "-I comma separated list of enabled groups for TLS key exchange.\n"
         "   The following values are valid:\n"
-        "   CECPQ3, P256, P384, P521, x25519, FF2048, FF3072, FF4096, FF6144, FF8192\n"
+        "   Kyber512, P256, P384, P521, x25519, FF2048, FF3072, FF4096, FF6144, FF8192\n"
         "-J comma separated list of enabled signature schemes in preference order.\n"
         "   The following values are valid:\n"
         "     rsa_pkcs1_sha1, rsa_pkcs1_sha256, rsa_pkcs1_sha384, rsa_pkcs1_sha512,\n"
@@ -2185,18 +2185,18 @@ server_main(
                 // TODO(goutam): To keep things simple for now, just blindly
                 // generate a DC. This can be refined in the future.
 
-                PK11SlotInfo *slot = PK11_GetBestSlot(CKM_NSS_CECPQ3_KEY_GEN, NULL);
+                PK11SlotInfo *slot = PK11_GetBestSlot(CKM_NSS_KYBER512_KEY_GEN, NULL);
                 if (!slot) {
                     errExit("PK11_GetBestSlot");
                 }
-                dcPrivKey = PK11_GenerateKeyPair(slot, CKM_NSS_CECPQ3_KEY_GEN, NULL, &dcPubKey,
+                dcPrivKey = PK11_GenerateKeyPair(slot, CKM_NSS_KYBER512_KEY_GEN, NULL, &dcPubKey,
                                                  PR_FALSE, PR_FALSE, NULL);
                 PK11_FreeSlot(slot);
 
                 // SSLExp_DelegateCredential
                 secStatus = SSL_DelegateCredential(cert[i], privKey[i],
                                                    dcPubKey,
-                                                   ssl_kemtls_with_cecpq3,
+                                                   ssl_kemtls_with_kyber512,
                                                    60 * 60 * 24 * 7, /* 1 week (seconds) */
                                                    PR_Now(),
                                                    &delegCred);

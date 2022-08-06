@@ -13,7 +13,7 @@
 #include "kyber512/api.h"
 
 SECStatus
-CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey)
+Kyber512_Generate(SECItem **publicKey, SECItem **secretKey)
 {
     *publicKey = SECITEM_AllocItem(NULL, *publicKey, PQCLEAN_KYBER512_CLEAN_CRYPTO_PUBLICKEYBYTES);
     if (publicKey == NULL) {
@@ -37,7 +37,7 @@ CECPQ3_Generate(SECItem **publicKey, SECItem **secretKey)
 }
 
 SECStatus
-CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey)
+Kyber512_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *publicKey)
 {
     *ciphertext = SECITEM_AllocItem(NULL, *ciphertext, PQCLEAN_KYBER512_CLEAN_CRYPTO_CIPHERTEXTBYTES);
     if (ciphertext == NULL) {
@@ -60,7 +60,7 @@ CECPQ3_Encapsulate(SECItem **ciphertext, SECItem **sharedSecret, uint8_t *public
 }
 
 SECStatus
-CECPQ3_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey)
+Kyber512_Decapsulate(SECItem **sharedSecret, uint8_t *ciphertext, uint8_t *secretKey)
 {
     *sharedSecret = SECITEM_AllocItem(NULL, *sharedSecret, PQCLEAN_KYBER512_CLEAN_CRYPTO_BYTES);
     if (sharedSecret == NULL) {
